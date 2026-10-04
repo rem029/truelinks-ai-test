@@ -65,6 +65,14 @@ Approved so far: express, zod, multer, kysely, better-sqlite3, openai, unpdf, ma
 - Runtime files live outside `docs/` (e.g. `data/`). Secrets only in `.env` (gitignored); document every variable in `.env.example`.
 
 ## Workflow
+**Per task/phase loop: plan → implement (agy-bridge) → seed → test → review (Claude) → update Results + README → commit when asked.**
+1. **Plan:** Claude reads the task file and writes a precise brief for the phase: goal, files to touch, interfaces/schemas, acceptance criteria, which standards in this file apply.
+2. **Implement with agy-bridge:** Claude delegates the implementation via `mcp__agy-bridge__delegate` (use `follow_up` to iterate on the same job). Claude does not hand-write the feature code; small fixes after review may go back through `follow_up`.
+3. **Seed:** make sure the data the phase needs exists and is loaded — run migrations + idempotent seed (`data/units.json`, `data/owner_ruleset.json`, sample leases/photos, `expected.json` fixtures). Add seed data in the same phase if missing.
+4. **Test:** run `npm run typecheck` and `npm test`; exercise the phase end-to-end against the seeded data with the stub provider (curl the API or drive the UI). Every phase ships with tests for its logic.
+5. **Review (Claude):** read the full diff against this file's standards and the task's acceptance criteria — correctness, simplicity, naming, error handling, logging, security, dependency rules. Use `mcp__agy-bridge__adversarial_review` as a second opinion on risky changes. Send findings back via `follow_up`; repeat 2–5 until clean.
+6. **Record:** tick the task's checklist, fill in **Results**, update README in the same change.
+
 - Tasks in `docs/tasks/NN-name.md`, split into phases; each phase has **Tasks** (checklist) and **Results** (what was done, decisions, follow-ups). Template: `docs/tasks/_template.md`. Update Results when a phase finishes.
 - **`README.md` is the deliverable — keep it current in the same change.** Every feature, sample data, script, decision, trade-off, scale concern or product idea goes into README as we go, not at the end.
 - Small, focused commits with a clear message saying what and why. Commit only when asked.

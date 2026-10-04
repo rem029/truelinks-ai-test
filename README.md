@@ -73,6 +73,16 @@ scripts/          Dev utilities (sample data generation)
 - **Few dependencies, all actively maintained and widely used.** Every package must have a recent release, strong weekly downloads and TypeScript types. For example, PDFs are read with `unpdf` (built on Mozilla's pdf.js, released in the last few months), not the better-known `pdf-parse`, whose last release is almost a year old.
 - **Term length counts the expiry date as inclusive.** A lease from 1 Nov 2026 to 31 Oct 2028 is 24 months. Rule R4 uses this convention.
 
+## How this was built
+
+Built with AI coding tools, as the brief invites. Planning lives in `docs/tasks/` (one file per task, split into phases with Tasks and Results), and the working rules are in `CLAUDE.md`. Every phase follows the same loop:
+1. **Plan:** Claude Code writes a precise brief for the phase.
+2. **Implement:** a second coding agent (via agy-bridge) writes the code.
+3. **Seed and test:** load the sample data and run typecheck, unit tests and an end-to-end check on the stub model.
+4. **Review:** Claude Code reviews the full diff against the standards, and the two loop until it's clean.
+
+Splitting writing from reviewing means no agent signs off its own work.
+
 ## Where it breaks first at scale
 
 1. **SQLite allows one writer at a time.** Many owners reviewing and many tenants reporting at once would queue on writes. Fix: switch the Kysely dialect to Postgres.
