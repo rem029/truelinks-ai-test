@@ -18,6 +18,12 @@ Brief: `docs/attachments/Solution-brief-explained.docx` (summary in `docs/email.
 - `data/` — `owner_ruleset.json`, `units.json`, sample leases and photos (+ `expected.json` ground truth)
 - Model: OpenRouter (OpenAI SDK) behind a provider interface; stub provider when `OPENROUTER_API_KEY` is unset
 
+## Folder structure
+- `apps/api/src`: `routes/` (endpoints: validate input with Zod, call a service, respond; no business logic), `services/` (business logic; no `req`/`res`) with `services/db/` (Kysely, migrations, repositories, seed) and `services/agents/` (lease + issue agents, prompt files, model provider), `middleware/` (Express middleware), `utils/` (small pure helpers). `env.ts`, `app.ts`, `server.ts` at the root.
+- `apps/web/src`: `pages/` (one component per screen), `components/` (reusable), `hooks/` (when needed), `store/` (Zustand, only for state shared across screens), `utils/` (helpers; `utils/api.ts` is the only place that calls `fetch`).
+- Create a folder when its first file arrives; no empty placeholder folders.
+- Tests sit next to the file they test (`rules.ts` → `rules.test.ts`).
+
 ## Code standards
 **Simple, easy to debug, easy to maintain.** This code is read as the standard for a team — optimise for the next reader.
 - Prefer plain functions and data over classes, patterns and abstractions. Add an abstraction only when there's a second real use (exceptions: the repository and model-provider interfaces, which exist for swapping).
@@ -31,7 +37,7 @@ Brief: `docs/attachments/Solution-brief-explained.docx` (summary in `docs/email.
 
 ## Dependencies
 Before adding a package, check it is **actively maintained** (release in the last ~6 months, issues answered), **widely used** (strong weekly downloads, many dependents) and **has types**. Prefer the standard library or a few lines of code over a package for small things. Record why each non-obvious dependency was chosen in README → Decisions.
-Approved so far: express, zod, multer, kysely, better-sqlite3, openai, unpdf, mammoth, react, vite, vitest, pdfkit (dev).
+Approved so far: express, zod, multer, kysely, better-sqlite3, openai, unpdf, mammoth, react, react-dom, zustand, vite, @vitejs/plugin-react, vitest; dev tooling: typescript, tsx, concurrently, @types/*, pdfkit.
 
 ## Testing
 - Unit-test all deterministic logic: rule engine R1–R7, term/date math, rent normalisation, unit matching, quote verification, patch/lock logic.
@@ -54,7 +60,7 @@ Approved so far: express, zod, multer, kysely, better-sqlite3, openai, unpdf, ma
 - Accessibility basics: semantic HTML, keyboard reachable actions, visible focus, sufficient contrast.
 
 ## Dev environment
-- Ports: web **3000**, API **8083**. Hostnames, CORS origin and Vite `allowedHosts` come from `.env` — never hardcode them.
+- Ports: web **3000**, API **8083**. The web app reaches the API via Vite's `/api` proxy (no CORS). Extra hostnames go in `WEB_ALLOWED_HOSTS` in `.env` — never hardcode them.
 - Machine-specific setup (private, gitignored): @docs/dev-env.md
 
 ## Repo & files

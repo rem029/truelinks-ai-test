@@ -6,15 +6,42 @@ This is the first slice of what would become a **property management system**. T
 
 > Work in progress.
 
+## Run it
+
+Requires Node 24+.
+
+```bash
+cp .env.example .env      # optional: add OPENROUTER_API_KEY; without it a stub model is used
+npm install
+npm run dev               # API on :8083, web on :3000 → open http://localhost:3000
+npm test                  # unit tests
+npm run typecheck
+```
+
+The web app calls the API through Vite's `/api` proxy, so only port 3000 needs to be reachable. To open it through another hostname (e.g. a remote dev box), list it in `WEB_ALLOWED_HOSTS`.
+
 ## Repository layout
 
 ```
-apps/api          Express 5 API (TypeScript)
-apps/web          Vite + React UI (TypeScript)
-packages/shared   Shared types / schemas
-data/             Owner ruleset, units, sample leases & photos
-scripts/          Dev utilities (sample data generation)
+apps/api/src
+  routes/       HTTP endpoints: parse and validate the request, call a service, send the response
+  services/     Business logic (lease review, rules, unit matching, work orders)
+    db/         Kysely setup, migrations, repositories, seed
+    agents/     Lease and issue agents, their prompt files, model provider (OpenRouter + stub)
+  middleware/   Express middleware (request log, error handler)
+  utils/        Small pure helper functions
+apps/web/src
+  pages/        One component per screen (unit page, review conversation, …)
+  components/   Reusable React components (cards, buttons, …)
+  hooks/        Custom hooks, when needed
+  store/        Global state (Zustand), when needed
+  utils/        Helpers, including the typed API client (utils/api.ts)
+packages/shared Shared types and Zod schemas (API, agent output, UI)
+data/           Owner ruleset, units, sample leases and photos
+scripts/        Dev utilities (sample data generation)
 ```
+
+Folders are created when their first file is needed. Routes stay thin: no business logic in a route, and no HTTP objects (`req`/`res`) inside a service, so services can be unit-tested directly. Tests sit next to the file they test (`rules.ts` → `rules.test.ts`).
 
 ## Sample data
 
@@ -71,6 +98,10 @@ scripts/          Dev utilities (sample data generation)
   - Migrations stick to portable SQL types. Structured records (a lease's extracted fields, chat cards) go in JSON columns: `TEXT` in SQLite, `jsonb` in Postgres.
   - **Trade-off:** SQLite allows only one writer at a time, so it's the first thing to replace when there are many users. That's the first item under "Where it breaks first at scale".
 - **Few dependencies, all actively maintained and widely used.** Every package must have a recent release, strong weekly downloads and TypeScript types. For example, PDFs are read with `unpdf` (built on Mozilla's pdf.js, released in the last few months), not the better-known `pdf-parse`, whose last release is almost a year old.
+- **The browser talks to the API through the Vite dev proxy.** The web app calls `/api/...` on its own origin and Vite forwards it to the API. That means no CORS setup and no API URL to configure, and it behaves the same on localhost and behind a remote proxy. In production the same path would be routed by the reverse proxy.
+- **Standard library over small packages.** `.env` is loaded with Node's built-in `process.loadEnvFile` (no `dotenv`) and validated with Zod at startup, so a bad value fails loudly. The shared package is consumed as TypeScript source (no build step) by `tsx` in the API and Vite in the web app.
+- **Zustand for global UI state, only where it's needed.** We have used it before; it's small, hook-based and needs no provider or boilerplate. Local component state stays in `useState`, and server data comes from the API client. A store is added only for state shared across screens (e.g. the open conversation).
+- **Cheap model by default.** `OPENROUTER_MODEL` defaults to `xiaomi/mimo-v2.6-pro` (`z-ai/glm-5.3-flash` is cheaper still). Both take images, call tools and return JSON, which both agents need, at a small fraction of a frontier model's price. Swapping models is a config change.
 - **Term length counts the expiry date as inclusive.** A lease from 1 Nov 2026 to 31 Oct 2028 is 24 months. Rule R4 uses this convention.
 
 ## How this was built
