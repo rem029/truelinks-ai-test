@@ -1,12 +1,14 @@
 import express, { Router } from 'express';
 import { requestLog } from './middleware/requestLog.js';
 import { errorHandler } from './middleware/errorHandler.js';
-import { healthRouter } from './routes/health.js';
+import { createHealthRouter } from './routes/health.js';
 import { createUnitsRouter } from './routes/units.js';
 import type { Repositories } from './services/db/repositories/index.js';
+import type { ModelProvider } from './services/agents/modelProvider/types.js';
 
 export interface AppDependencies {
   repositories: Repositories;
+  modelProvider: ModelProvider;
 }
 
 export function createApp(deps: AppDependencies) {
@@ -16,7 +18,7 @@ export function createApp(deps: AppDependencies) {
   app.use(requestLog);
 
   const apiRouter = Router();
-  apiRouter.use(healthRouter);
+  apiRouter.use(createHealthRouter(deps.modelProvider));
   apiRouter.use(createUnitsRouter(deps.repositories.units));
 
   app.use('/api', apiRouter);

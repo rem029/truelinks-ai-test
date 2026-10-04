@@ -29,6 +29,10 @@ const envSchema = z.object({
     .string()
     .default('file:./var/app.db')
     .transform(resolveDatabaseUrl),
+  OPENROUTER_API_KEY: z
+    .preprocess((val) => (typeof val === 'string' && val.trim() === '' ? undefined : val), z.string().optional()),
+  OPENROUTER_MODEL: z
+    .preprocess((val) => (typeof val === 'string' && val.trim() === '' ? undefined : val), z.string().default('xiaomi/mimo-v2.6-pro')),
 });
 
 const result = envSchema.safeParse(process.env);

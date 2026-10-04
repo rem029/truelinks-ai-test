@@ -8,6 +8,7 @@ import { createDb } from './services/db/db.js';
 import { migrateToLatest } from './services/db/migrations/migrate.js';
 import { seed } from './services/db/seed.js';
 import { createRepositories } from './services/db/repositories/index.js';
+import { createStubProvider } from './services/agents/modelProvider/stubProvider.js';
 
 describe('API', () => {
   let server: Server;
@@ -18,8 +19,9 @@ describe('API', () => {
     await migrateToLatest(db);
     await seed(db);
     const repositories = createRepositories(db);
+    const modelProvider = createStubProvider();
 
-    const app = createApp({ repositories });
+    const app = createApp({ repositories, modelProvider });
     await new Promise<void>((resolve) => {
       server = app.listen(0, '127.0.0.1', () => {
         const addr = server.address() as AddressInfo;
@@ -35,12 +37,12 @@ describe('API', () => {
     });
   });
 
-  it('GET /api/health returns 200 {status:"ok"} validating with shared schema', async () => {
+  it('GET /api/health returns 200 {status:"ok", modelProvider:"stub"} validating with shared schema', async () => {
     const res = await fetch(`${baseUrl}/api/health`);
     expect(res.status).toBe(200);
     const json = await res.json();
     const validated = HealthResponse.parse(json);
-    expect(validated).toEqual({ status: 'ok' });
+    expect(validated).toEqual({ status: 'ok', modelProvider: 'stub' });
   });
 
   it('GET /api/units returns 5 units with MC-B-1205 occupied', async () => {
