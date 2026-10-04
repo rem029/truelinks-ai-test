@@ -1,0 +1,107 @@
+{
+  "_note": "Ground truth written from what each photo actually shows (reviewed by eye), not from the prompts. Used by the stub provider and tests. Lists are 'must include' — extra reasonable items are fine.",
+  "issue-01-ac-leak": {
+    "unitId": "MC-B-1204",
+    "lease": "lease-01-clean-MC-B-1204.pdf",
+    "photos": {
+      "issue-01-ac-leak-1.jpg": {
+        "condition": "damaged",
+        "equipment": ["split AC (wall-mounted)", "window + curtains", "bed", "bedside table", "lamp"],
+        "damages": ["brown water stain down wall below AC", "water puddle on floor tiles"]
+      },
+      "issue-01-ac-leak-2.jpg": {
+        "condition": "worn",
+        "equipment": ["split AC (wall-mounted)"],
+        "damages": ["water dripping from AC vent/louvres", "brown discoloration on AC casing", "stain on wall below unit"]
+      }
+    },
+    "workOrder": {
+      "expected": true,
+      "category": "HVAC",
+      "severity": "medium",
+      "titleContains": ["AC", "leak"],
+      "responsibility": "landlord (lease 01 §7: Landlord responsible for air-conditioning units)"
+    },
+    "notes": "Brand-like text on the unit is AI-generated; the agent should not rely on or assert a brand."
+  },
+  "issue-02-tap-drip": {
+    "unitId": "MC-B-0902",
+    "lease": "lease-02-problems-MC-B-0902.pdf",
+    "photos": {
+      "issue-02-tap-drip-1.jpg": {
+        "condition": "worn",
+        "equipment": ["kitchen mixer tap", "stainless steel sink"],
+        "damages": ["tap dripping", "limescale build-up at tap base"]
+      },
+      "issue-02-tap-drip-2.jpg": {
+        "condition": "damaged",
+        "equipment": ["sink drain/waste pipe", "flexible supply hoses", "under-sink cabinet"],
+        "damages": ["corroded drain pipe fitting leaking", "water collecting in bowl", "wet cabinet floor"]
+      }
+    },
+    "workOrder": {
+      "expected": true,
+      "category": "plumbing",
+      "severity": "low-medium",
+      "titleContains": ["leak"],
+      "responsibility": "split/uncertain: tap drip is likely a minor repair (Tenant, lease 02 §7: under QAR 500); corroded drain fitting may exceed QAR 500 (Landlord). Agent should surface this, not decide."
+    },
+    "notes": "Photo 2 shows a different fault than the prompt asked for: the leak is from the corroded sink drain, not the tap. The agent should report two faults."
+  },
+  "issue-03-water-heater": {
+    "unitId": "MC-A-0301",
+    "lease": "lease-04-quarterly-no-deposit-MC-A-0301.pdf",
+    "photos": {
+      "issue-03-water-heater-1.jpg": {
+        "condition": "damaged",
+        "equipment": ["electric water heater (wall-mounted)", "electrical junction box", "flexible hoses + valves"],
+        "damages": ["rust at bottom seam", "corroded pipe fittings dripping", "exposed/frayed wiring at junction box", "damp, cracked wall plaster"]
+      },
+      "issue-03-water-heater-2.jpg": {
+        "condition": "damaged",
+        "equipment": ["electric water heater (wall-mounted)", "wall power socket"],
+        "damages": ["corroded fittings dripping", "water droplets on power socket", "puddle on floor tiles", "peeling wall plaster"]
+      }
+    },
+    "workOrder": {
+      "expected": true,
+      "category": "plumbing + electrical",
+      "severity": "high",
+      "urgent": true,
+      "titleContains": ["water heater"],
+      "responsibility": "landlord (lease 04 §6: Landlord maintains the water heater)",
+      "safety": "Water on/near a power socket and exposed wiring — agent should advise isolating power and mark urgent."
+    }
+  },
+  "issue-04-move-in-ok": {
+    "unitId": "MC-B-1204",
+    "lease": "lease-01-clean-MC-B-1204.pdf",
+    "photos": {
+      "issue-04-move-in-ok-1.jpg": {
+        "condition": "new",
+        "equipment": ["split AC (wall-mounted)", "floor-to-ceiling window", "recessed ceiling lights", "smoke detector", "power sockets"],
+        "damages": []
+      },
+      "issue-04-move-in-ok-2.jpg": {
+        "condition": "new",
+        "equipment": ["built-in oven", "induction hob", "extractor hood", "refrigerator", "sink + mixer tap", "under-cabinet lighting", "smoke detector"],
+        "damages": []
+      }
+    },
+    "workOrder": { "expected": false },
+    "notes": "No-false-positive case: agent reports condition + inventory, says no issue found, drafts no work order."
+  },
+  "issue-05-unclear": {
+    "unitId": "MC-A-0301",
+    "lease": "lease-04-quarterly-no-deposit-MC-A-0301.pdf",
+    "photos": {
+      "issue-05-unclear-1.jpg": {
+        "condition": "undeterminable",
+        "equipment": [],
+        "damages": ["possible dark stain or crack at ceiling corner (unconfirmed)"]
+      }
+    },
+    "workOrder": { "expected": false },
+    "notes": "Too dark and blurry. Agent should ask for a clearer, well-lit photo instead of guessing."
+  }
+}

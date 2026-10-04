@@ -2,8 +2,10 @@ node_modules/
 dist/
 .env
 *.db
+var/
 
-# Private working notes (symlinked into root)
-/docs
-/CLAUDE.md
+# docs/: only the task log and CLAUDE.md are public; the brief, email and attachments stay private
+/docs/*
+!/docs/tasks/
+!/docs/CLAUDE.md
 /.claude
