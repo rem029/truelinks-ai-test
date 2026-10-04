@@ -74,6 +74,7 @@ export async function readImageText(
       },
     ],
     responseSchema: z.object({ text: z.string() }),
+    modelTier: 'fast',
   });
 
   const text = result.output?.text ?? result.text ?? '';

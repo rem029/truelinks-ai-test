@@ -147,6 +147,7 @@ describe('openRouterProvider', () => {
       const provider = createOpenRouterProvider({
         apiKey: 'test-key',
         model: 'test-model',
+        fastModel: 'test-fast-model',
         client: fakeClient,
       });
 
@@ -191,6 +192,7 @@ describe('openRouterProvider', () => {
       const provider = createOpenRouterProvider({
         apiKey: 'test-key',
         model: 'test-model',
+        fastModel: 'test-fast-model',
         client: fakeClient,
       });
 
@@ -208,6 +210,27 @@ describe('openRouterProvider', () => {
       const createArgs = mockCreate.mock.calls[0]?.[0];
       expect(createArgs?.response_format?.json_schema?.strict).toBe(false);
       expect(createArgs?.response_format?.json_schema?.schema).not.toHaveProperty('$schema');
+      expect(createArgs).not.toHaveProperty('reasoning_effort');
+    });
+
+    it('passes reasoningEffort through as reasoning_effort', async () => {
+      const mockCreate = vi.fn().mockResolvedValue({
+        id: 'comp_effort',
+        created: Date.now(),
+        model: 'test-model',
+        object: 'chat.completion',
+        choices: [{ index: 0, finish_reason: 'stop', logprobs: null, message: { role: 'assistant', content: 'ok', refusal: null } }],
+      });
+      const provider = createOpenRouterProvider({
+        apiKey: 'test-key',
+        model: 'test-model',
+        fastModel: 'test-fast-model',
+        client: { chat: { completions: { create: mockCreate } } },
+      });
+
+      await provider.complete({ purpose: 'quick', messages: [{ role: 'user', content: 'hi' }], reasoningEffort: 'low' });
+
+      expect(mockCreate.mock.calls[0]?.[0]?.reasoning_effort).toBe('low');
     });
 
     it('retries once when responseSchema fails and succeeds on retry', async () => {
@@ -263,6 +286,7 @@ describe('openRouterProvider', () => {
       const provider = createOpenRouterProvider({
         apiKey: 'test-key',
         model: 'test-model',
+        fastModel: 'test-fast-model',
         client: fakeClient,
       });
 
@@ -307,6 +331,7 @@ describe('openRouterProvider', () => {
       const provider = createOpenRouterProvider({
         apiKey: 'test-key',
         model: 'test-model',
+        fastModel: 'test-fast-model',
         client: fakeClient,
       });
 
@@ -331,6 +356,7 @@ describe('openRouterProvider', () => {
       const provider = createOpenRouterProvider({
         apiKey: 'test-key',
         model: 'test-model',
+        fastModel: 'test-fast-model',
         client: fakeClient,
       });
 
@@ -380,6 +406,7 @@ describe('openRouterProvider', () => {
       const provider = createOpenRouterProvider({
         apiKey: 'test-key',
         model: 'test-model',
+        fastModel: 'test-fast-model',
         client: fakeClient,
       });
 
@@ -420,6 +447,7 @@ describe('openRouterProvider', () => {
       const provider = createOpenRouterProvider({
         apiKey: 'test-key',
         model: 'test-model',
+        fastModel: 'test-fast-model',
         client: fakeClient,
       });
 
@@ -436,6 +464,105 @@ describe('openRouterProvider', () => {
       );
 
       consoleSpy.mockRestore();
+    });
+
+    it('uses fastModel when modelTier is fast', async () => {
+      const fakeCompletion: OpenAI.ChatCompletion = {
+        id: 'comp_fast',
+        created: Date.now(),
+        model: 'test-fast-model',
+        object: 'chat.completion',
+        choices: [
+          {
+            index: 0,
+            finish_reason: 'stop',
+            logprobs: null,
+            message: {
+              role: 'assistant',
+              content: 'Fast response',
+              refusal: null,
+            },
+          },
+        ],
+        usage: { prompt_tokens: 10, completion_tokens: 4, total_tokens: 14 },
+      };
+
+      const mockCreate = vi.fn().mockResolvedValue(fakeCompletion);
+      const fakeClient: OpenAIClientLike = {
+        chat: { completions: { create: mockCreate } },
+      };
+
+      const provider = createOpenRouterProvider({
+        apiKey: 'test-key',
+        model: 'test-model',
+        fastModel: 'test-fast-model',
+        client: fakeClient,
+      });
+
+      const res = await provider.complete({
+        purpose: 'fast-task',
+        messages: [{ role: 'user', content: 'Fast query' }],
+        modelTier: 'fast',
+      });
+
+      expect(mockCreate).toHaveBeenCalledTimes(1);
+      expect(mockCreate.mock.calls[0]?.[0]?.model).toBe('test-fast-model');
+      expect(res.model).toBe('test-fast-model');
+    });
+
+    it('uses default model when modelTier is omitted or default', async () => {
+      const fakeCompletion: OpenAI.ChatCompletion = {
+        id: 'comp_default',
+        created: Date.now(),
+        model: 'test-model',
+        object: 'chat.completion',
+        choices: [
+          {
+            index: 0,
+            finish_reason: 'stop',
+            logprobs: null,
+            message: {
+              role: 'assistant',
+              content: 'Default response',
+              refusal: null,
+            },
+          },
+        ],
+        usage: { prompt_tokens: 10, completion_tokens: 4, total_tokens: 14 },
+      };
+
+      const mockCreate = vi.fn().mockResolvedValue(fakeCompletion);
+      const fakeClient: OpenAIClientLike = {
+        chat: { completions: { create: mockCreate } },
+      };
+
+      const provider = createOpenRouterProvider({
+        apiKey: 'test-key',
+        model: 'test-model',
+        fastModel: 'test-fast-model',
+        client: fakeClient,
+      });
+
+      const resWithoutTier = await provider.complete({
+        purpose: 'default-task',
+        messages: [{ role: 'user', content: 'Default query' }],
+      });
+
+      expect(mockCreate).toHaveBeenCalledTimes(1);
+      expect(mockCreate.mock.calls[0]?.[0]?.model).toBe('test-model');
+      expect(resWithoutTier.model).toBe('test-model');
+
+      mockCreate.mockClear();
+
+      const resWithDefaultTier = await provider.complete({
+        purpose: 'default-task',
+        messages: [{ role: 'user', content: 'Default query' }],
+        modelTier: 'default',
+      });
+
+      expect(mockCreate).toHaveBeenCalledTimes(1);
+      expect(mockCreate.mock.calls[0]?.[0]?.model).toBe('test-model');
+      expect(resWithDefaultTier.model).toBe('test-model');
     });
   });
 });

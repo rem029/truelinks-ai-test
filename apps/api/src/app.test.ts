@@ -1,11 +1,11 @@
-import { describe, it, expect, beforeAll, afterAll } from 'vitest';
+import { describe, it, expect, vi, beforeAll, afterAll } from 'vitest';
 import type { Server } from 'node:http';
 import type { AddressInfo } from 'node:net';
 import { mkdtempSync, rmSync, readFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { z } from 'zod';
-import { HealthResponse, Unit, Conversation, LeaseDocument, Message } from '@truelinks/shared';
+import { HealthResponse, Unit, Conversation, Lease, LeaseDocument, Message } from '@truelinks/shared';
 import { createApp } from './app.ts';
 import { createDb } from './services/db/db.ts';
 import { migrateToLatest } from './migrations/migrate.ts';
@@ -110,19 +110,24 @@ describe('API', () => {
     const pdfBuffer = readFileSync(pdfPath);
 
     const formData = new FormData();
-    formData.append('file', new Blob([pdfBuffer], { type: 'application/pdf' }), 'lease-01.pdf');
+    formData.append('file', new Blob([pdfBuffer], { type: 'application/pdf' }), 'lease-01-clean-MC-B-1204.pdf');
 
     const uploadRes = await fetch(`${baseUrl}/api/conversations/${conv.id}/lease-document`, {
       method: 'POST',
       body: formData,
     });
     expect(uploadRes.status).toBe(201);
-    const uploadJson = (await uploadRes.json()) as { document: unknown; message: unknown };
+    const uploadJson = (await uploadRes.json()) as { document: unknown; message: unknown; lease: unknown };
     const doc = LeaseDocument.parse(uploadJson.document);
     const msg = Message.parse(uploadJson.message);
+    const lease = Lease.parse(uploadJson.lease);
+    expect(lease.status).toBe('draft');
+    expect(lease.unitId).toBe('MC-B-1204');
+    expect(lease.ruleResults.every((r) => r.status === 'PASS')).toBe(true);
+    expect(lease.record.rent.amount.source).toMatchObject({ clauseId: '2', verified: true });
 
     expect(doc.conversationId).toBe(conv.id);
-    expect(doc.filename).toBe('lease-01.pdf');
+    expect(doc.filename).toBe('lease-01-clean-MC-B-1204.pdf');
     expect(doc.mimeType).toBe('application/pdf');
     expect(doc.pageCount).toBe(1);
     expect(doc.clauses.map((c) => c.id)).toEqual([
@@ -145,19 +150,21 @@ describe('API', () => {
     expect(msg.attachments).toHaveLength(1);
     expect(msg.attachments[0]).toEqual({
       id: doc.id,
-      filename: 'lease-01.pdf',
+      filename: 'lease-01-clean-MC-B-1204.pdf',
       mimeType: 'application/pdf',
     });
 
-    // 3. GET conversation includes message with attachment and document
-    const getConvRes = await fetch(`${baseUrl}/api/conversations/${conv.id}`);
-    expect(getConvRes.status).toBe(200);
-    const getConvJson = (await getConvRes.json()) as {
-      conversation: unknown;
-      messages: unknown[];
-      documents: unknown[];
-    };
+    // 3. GET conversation includes message, document and the lease once the background analysis is done
+    expect(lease.analysisStatus).toBe('pending');
+    const getConvJson = await vi.waitFor(async () => {
+      const res = await fetch(`${baseUrl}/api/conversations/${conv.id}`);
+      expect(res.status).toBe(200);
+      const json = (await res.json()) as { conversation: unknown; messages: unknown[]; documents: unknown[]; lease: unknown };
+      expect(Lease.parse(json.lease).analysisStatus).toBe('done');
+      return json;
+    });
     expect(Conversation.parse(getConvJson.conversation).id).toBe(conv.id);
+    expect(Lease.parse(getConvJson.lease).id).toBe(lease.id);
     expect(getConvJson.messages).toHaveLength(1);
     expect(Message.parse(getConvJson.messages[0]).id).toBe(msg.id);
     expect(getConvJson.documents).toHaveLength(1);
@@ -170,6 +177,15 @@ describe('API', () => {
     expect(fileRes.headers.get('content-disposition')).toBe('inline');
     const returnedBytes = Buffer.from(await fileRes.arrayBuffer());
     expect(returnedBytes).toEqual(pdfBuffer);
+
+    // 5. A second lease in the same conversation is rejected
+    const againForm = new FormData();
+    againForm.append('file', new Blob([pdfBuffer], { type: 'application/pdf' }), 'again.pdf');
+    const againRes = await fetch(`${baseUrl}/api/conversations/${conv.id}/lease-document`, {
+      method: 'POST',
+      body: againForm,
+    });
+    expect(againRes.status).toBe(409);
   });
 
   it('POST /api/conversations/:id/lease-document rejects unsupported file format with 400', async () => {

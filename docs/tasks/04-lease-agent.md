@@ -62,11 +62,103 @@ Goal: upload lease in chat → sourced record, flags, rule results, unit match �
 
 ## Phase 2 — Extract + verify
 ### Tasks
-- [ ] Structured-output call: fields with clauseId + verbatim quote, null when absent; conflicts returned as candidates
-- [ ] Verify each quote exists in its clause → unverified = flag
-- [ ] Currency: amounts must be in QAR. If the currency is missing or isn't QAR, flag it (high) and ask the owner. Never convert silently.
+- [x] Structured-output call: fields with clauseId + verbatim quote, null when absent; conflicts returned as candidates
+- [x] Verify each quote exists in its clause → unverified = flag
+- [x] Currency: amounts must be in QAR. If the currency is missing or isn't QAR, flag it (high) and ask the owner. Never convert silently.
 ### Results
--
+- **Who wrote it:** agy wrote step 1 (`extractionSchema`, `verifyQuote`, `buildLeaseRecord`, `fromRecord`, fixtures and tests) and the review fixes. agy then ran out of quota, so with the owner's OK Claude wrote steps 2 (flags) and 3 (prompt, service, stub, route).
+- **Extraction** (`apps/api/src/services/leases/extract/`):
+  - `extractionSchema.ts` `LeaseExtraction`:
+    - `fields` mirror `LeaseRecord`. Each one is `{found, value, clauseId, quote, confidence}` with a single type per property, because mimo breaks on nullable or union JSON schema.
+    - `conflicts: [{fieldPath, candidates: [{value, clauseId, quote}]}]`.
+    - `concerns: [{fieldPath, clauseId, message}]`.
+  - `verifyQuote.ts`: pure. It normalises whitespace, curly quotes, dashes and case, and needs the clause to exist and the quote to be non-empty.
+  - `buildLeaseRecord.ts`: pure, extraction + clauses → `{record, flags}`.
+    - `found:false` gives an empty field.
+    - A value that fails its field's schema gives an empty field and `UNREADABLE_VALUE`.
+    - Otherwise the value is kept with `source.verified` from `verifyQuote`.
+    - Conflicts: candidates whose quote isn't verified are dropped; fewer than 2 distinct values gives no flag; the same disagreement listed under two fields gives one flag. The result is a `VALUE_CONFLICT` (high) flag.
+    - Concerns become `MODEL_CONCERN` (medium) flags with unique ids.
+    - The result is checked with `LeaseRecord.parse`.
+  - `extractLease.ts`: formats the clauses as `Document: <filename>` and `[id] heading\ntext`, then:
+    - calls `lease-extraction`; a model failure or empty output gives 502;
+    - builds the record and runs `evaluateLease` with the conversation's page unit and the document's `textSource`/`clauseSplit`;
+    - saves a `draft` lease, with `unitId` set only when the unit matched;
+    - logs `lease extract … found=n/20 unverified= conflicts= concerns= flags= ms=`.
+  - Prompt: `services/agents/prompts/leaseExtraction.md`.
+- **Flags** (`flags.ts`, re-run on every evaluation):
+  - `UNVERIFIED_QUOTE` (medium). Never raised for a user-sourced field.
+  - `CURRENCY_MISSING` / `CURRENCY_NOT_QAR` (high), only when the lease states an amount. No conversion.
+  - `TEXT_FROM_IMAGE` (medium; wording from `expected.json`).
+  - `CLAUSE_SPLIT_AI` / `CLAUSE_SPLIT_PARAGRAPHS` (low).
+  - `listFields(record)` in `leaseFields.ts` walks all 20 fields.
+  - `evaluateLease` takes an optional `document`.
+- **Stub:** `lease-extraction` reads the `Document:` line and returns `toExtraction(sampleLeaseRecords[file], sampleLeaseExtras[file])`. It returns `blankLeaseRecord` for an unknown file, so any upload still runs end to end without a key.
+- **API:**
+  - The upload response now includes `lease`.
+  - `GET /api/conversations/:id` includes `lease` (or null).
+  - `ingestLease` rejects a second lease in the same conversation with 409, before anything is saved.
+- **Tests:**
+  - `verifyQuote` and `buildLeaseRecord`: every sample round-trips with all quotes verified, plus unreadable values, conflict message and dedupe, fabricated candidates and unique concern ids.
+  - New flags.
+  - `extractLease`: all 8 samples ingested and extracted with the stub. The record equals the fixture, rule statuses equal `expected.json`, and every expected flag is present (except the two covered by R3/R7). Also: model concern, unit set only when matched, 502 saves nothing, 409.
+  - API: the upload returns the lease, GET includes it, and a second upload gets 409.
+  - 241 tests pass and typecheck is clean.
+- **End-to-end with the real model (mimo) on the dev API:**
+  - Leases 02, 05, 08 (PNG) and 09 (AI split): every rule status matches `expected.json` (lease 09 all PASS), and 0 quotes were unverified.
+  - Lease 05 gives exactly "Monthly rent conflict: clause 2 says 8,500, clause 5 says 8,000".
+  - Lease 02 gives exactly the expected flags, including "Renewal terms vague".
+  - Lease 08 gets `TEXT_FROM_IMAGE`; lease 09 gets `CLAUSE_SPLIT_AI`.
+  - About 20–50 s per lease (1.2k in / 1.8–2.6k out tokens).
+  - Prompt fixes from these runs:
+    - The model was putting "Apartment 1501" in `unitId`, so the prompt now says only a code counts.
+    - Its concerns repeated code's flags, so the prompt now lists what code checks and asks for short messages.
+    - It reported one conflict under both `rent.amount` and `rent.monthly`; code now reports it once.
+- **Follow-up (owner request): two passes, so the upload is fast.** The single call took 20–50 s. I measured where the time went: the model writes about 60–80 tokens a second, and it spent about 850 tokens thinking before writing about 1.5k tokens of answer. Retrieval (RAG) was considered and rejected: it shrinks the input, which takes under a second, and it would miss conflicts hidden in unrelated clauses.
+  - **Pass 1, during the upload** (`extractLease`): fields only, sent with `reasoningEffort: 'low'`. That's a new optional field on `CompletionRequest`, which OpenRouter receives as `reasoning_effort`. On lease 01 it went from 29.5 s to 13.4 s; real uploads took 10–21 s. The lease is saved with `analysisStatus: 'pending'`.
+  - **Pass 2, in the background** (`analyzeLease`, started by the route without waiting): the whole document plus the extracted values, with full reasoning, prompt `leaseAnalysis.md`. It returns `LeaseAnalysis {conflicts, concerns}`, which `analysisFlags.ts` (pure) turns into flags.
+    - It re-reads the lease and adds only flags with new ids, so the owner's changes made meanwhile are kept.
+    - It sets `done`, or `failed` plus an `ANALYSIS_FAILED` flag. It never throws to a caller.
+    - It took 5–23 s after the upload.
+  - `LeaseExtraction` is now `{fields}`; conflicts and concerns moved to `LeaseAnalysis`. The fixture was renamed `sampleLeaseAnalyses`.
+  - Storage: migration `003_lease_analysis_status` adds `leases.analysis_status`, defaulting to `done` for existing rows.
+  - The stub handles `lease-analysis` from `sampleLeaseAnalyses` (an empty analysis for unknown files).
+  - The concern prompt now defines vague (no renewal length, notice period or rent basis).
+  - Tests: 243 pass and typecheck is clean.
+    - `analysisFlags` and the provider passing `reasoning_effort` have their own tests.
+    - Two-pass `extractLease`/`analyzeLease` tests cover: conflicts appear only after analysis, the owner's dismissals are kept, and a failure is recorded.
+    - The API test waits for `analysisStatus: done`.
+  - Real model end-to-end:
+    - lease 05: upload 9.7 s → conflict and "Renewal terms vague" at about 28 s.
+    - lease 02: 14.8 s → "Renewal terms vague" at about 38 s.
+    - lease 01: 20.7 s → done at about 27 s.
+    - Rule statuses unchanged.
+  - Still to do: the UI shows the progress (steps, then "checking for conflicts…" until `done`). That goes with the review UI, ideally as server-sent events instead of polling. Further speed-ups if needed: drop `confidence`, use the quote as the value for long text, or split pass 1 into parallel calls.
+- **Follow-up (owner request): a fast model for simple jobs** (implemented by agy, reviewed by Claude).
+  - Model comparison on lease extraction, checking values against the fixtures and quotes against the clauses:
+    - `google/gemini-3.5-flash-lite`: 4.1–4.7 s, values right. One broken JSON in 5 runs, which the provider's one retry covers.
+    - `deepseek-v4.1-flash`: 3–16 s, varies with the host.
+    - `mimo-v2.6-pro`: 11.5–16 s, and one 90 s hang.
+    - `gpt-oss-120b`: wrong monthly rent.
+    - `qwen3.8-flash`: 84 s, wrong signature.
+    - `glm-5.3-flashx`: invalid JSON.
+    - Image transcription: Gemini about 3 s vs mimo 17 s, and 20/20 fixture quotes found in Gemini's transcript.
+  - `OPENROUTER_FAST_MODEL` (default `google/gemini-3.5-flash-lite`). `CompletionRequest.modelTier?: 'fast' | 'default'`; the OpenRouter provider picks the model per call and reports it in logs and results.
+  - On `fast`: `lease-extraction`, `lease-clause-headings`, `lease-transcription`. On `default` (mimo): `lease-analysis`, the agent loop and photo analysis.
+  - 245 tests pass and typecheck is clean.
+  - End-to-end on the dev API, uploads now return in:
+    - lease 05: 4.2 s
+    - lease 02: 4.1 s
+    - lease 09 (AI split): 5.3 s
+    - lease 08 (PNG, including transcription): 6.5 s
+  - The background analysis was done about 15–19 s after the upload started. Rule statuses unchanged, 0 unverified quotes, and lease 05's conflict found.
+- **Known limits:**
+  - Gemini returned invalid JSON once in 5 runs; the retry covers it, at the cost of a few seconds.
+  - The analysis runs in the API process, so a restart leaves `pending` (README scale note 3).
+  - The model's concerns vary from run to run. Leases 08 and 09 got a "renewal terms" concern because renewal is "on terms to be confirmed by the Landlord".
+  - The label in lease 05's `UNIT_NOT_FOUND` message is whatever the model extracted, so it can be longer than in `expected.json`.
+  - Conflicts and concerns are stored on the lease at extraction time. Phase 4 must keep them when it re-runs `detectFlags`, for example by merging by flag id.
+  - Extraction is one call of 20–50 s with no streaming or progress yet. That is for the UI phase.
 
 ## Phase 3 — Flags, rules, unit
 ### Tasks

@@ -23,6 +23,7 @@ export interface OpenAIClientLike {
 export interface OpenRouterProviderOptions {
   apiKey: string;
   model: string;
+  fastModel: string;
   client?: OpenAIClientLike;
 }
 
@@ -168,7 +169,6 @@ export function parseOpenAIToolCalls(
 }
 
 export function createOpenRouterProvider(options: OpenRouterProviderOptions): ModelProvider {
-  const model = options.model;
   const client: OpenAIClientLike =
     options.client ??
     new OpenAI({
@@ -179,6 +179,7 @@ export function createOpenRouterProvider(options: OpenRouterProviderOptions): Mo
   return {
     name: 'openrouter',
     async complete<T = unknown>(req: CompletionRequest<T>): Promise<CompletionResult<T>> {
+      const model = req.modelTier === 'fast' ? options.fastModel : options.model;
       let currentMessages = mapChatMessagesToOpenAI(req.messages, req.images);
       const openAiTools = mapToolsToOpenAI(req.tools);
       const responseFormat = req.responseSchema
@@ -201,6 +202,7 @@ export function createOpenRouterProvider(options: OpenRouterProviderOptions): Mo
             messages: messagesToCall,
             ...(openAiTools ? { tools: openAiTools } : {}),
             ...(responseFormat ? { response_format: responseFormat } : {}),
+            ...(req.reasoningEffort ? { reasoning_effort: req.reasoningEffort } : {}),
           });
           const ms = Math.round(performance.now() - start);
           return { resp, ms };

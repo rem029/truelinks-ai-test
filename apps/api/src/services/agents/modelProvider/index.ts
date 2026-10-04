@@ -7,6 +7,7 @@ export * from './types.ts';
 export interface CreateModelProviderOptions {
   apiKey?: string;
   model: string;
+  fastModel: string;
 }
 
 export function createModelProvider(options: CreateModelProviderOptions): ModelProvider {
@@ -16,6 +17,6 @@ export function createModelProvider(options: CreateModelProviderOptions): ModelP
     return createStubProvider();
   }
 
-  console.log(`Model provider: openrouter (${options.model})`);
-  return createOpenRouterProvider({ apiKey, model: options.model });
+  console.log(`Model provider: openrouter (default=${options.model}, fast=${options.fastModel})`);
+  return createOpenRouterProvider({ apiKey, model: options.model, fastModel: options.fastModel });
 }

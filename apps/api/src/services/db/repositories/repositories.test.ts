@@ -206,6 +206,7 @@ describe('Repositories round-trip with JSON column boundary parsing', () => {
       ],
       rulesetVersion: '1.0',
       status: 'draft',
+      analysisStatus: 'done',
       overrideReason: null,
       confirmedAt: null,
       createdAt: '2026-10-04T12:00:00.000Z',

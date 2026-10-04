@@ -59,6 +59,7 @@ export async function detectHeadingsWithModel(
         { role: 'user', content: numberedLines },
       ],
       responseSchema: HeadingsResponseSchema,
+      modelTier: 'fast',
     });
 
     const headings = result.output?.headings;

@@ -5,6 +5,8 @@ import { IssueCondition } from '@truelinks/shared';
 import { REPO_ROOT } from '../../../env.ts';
 import type { CompletionRequest, CompletionResult, ModelProvider, ToolCall } from './types.ts';
 import { parseCorrection } from './parseCorrection.ts';
+import { blankLeaseRecord, sampleLeaseAnalyses, sampleLeaseRecords } from '../../leases/sampleLeaseRecords.ts';
+import { toExtraction } from '../../leases/extract/fromRecord.ts';
 
 const ExpectedPhotoEntrySchema = z.object({
   condition: IssueCondition,
@@ -150,6 +152,21 @@ function leaseCorrection<T>(req: CompletionRequest<T>): CompletionResult<T> {
   return stubResult({ text: question });
 }
 
+// Lease extraction and analysis inputs start with "Document: <filename>", which picks the sample fixture
+function leaseFixture<T>(req: CompletionRequest<T>): CompletionResult<T> {
+  const userText = req.messages.find((m) => m.role === 'user')?.content ?? '';
+  const filename = userText.match(/^Document: (.+)$/m)?.[1]?.trim() ?? '';
+
+  let output: unknown =
+    req.purpose === 'lease-extraction'
+      ? toExtraction(sampleLeaseRecords[filename] ?? blankLeaseRecord)
+      : (sampleLeaseAnalyses[filename] ?? { conflicts: [], concerns: [] });
+  if (req.responseSchema) {
+    output = req.responseSchema.parse(output);
+  }
+  return stubResult({ text: JSON.stringify(output), output: output as T });
+}
+
 export function createStubProvider(): ModelProvider {
   const expectedPhotosPath = resolve(REPO_ROOT, 'data/sample-photos/expected.json');
   const rawData = readFileSync(expectedPhotosPath, 'utf-8');
@@ -199,7 +216,10 @@ export function createStubProvider(): ModelProvider {
         return stubResult({ text: JSON.stringify(output), output: output as T });
       }
 
-      // Task 04 will add lease extraction fixtures from data/sample-leases/expected.json here.
+      if (req.purpose === 'lease-extraction' || req.purpose === 'lease-analysis') {
+        return leaseFixture(req);
+      }
+
       throw new Error(`Stub provider has no scripted response for purpose '${req.purpose}'`);
     },
   };

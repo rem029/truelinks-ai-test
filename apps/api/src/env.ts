@@ -41,6 +41,8 @@ const envSchema = z.object({
     .preprocess((val) => (typeof val === 'string' && val.trim() === '' ? undefined : val), z.string().optional()),
   OPENROUTER_MODEL: z
     .preprocess((val) => (typeof val === 'string' && val.trim() === '' ? undefined : val), z.string().default('xiaomi/mimo-v2.6-pro')),
+  OPENROUTER_FAST_MODEL: z
+    .preprocess((val) => (typeof val === 'string' && val.trim() === '' ? undefined : val), z.string().default('google/gemini-3.5-flash-lite')),
 });
 
 const result = envSchema.safeParse(process.env);

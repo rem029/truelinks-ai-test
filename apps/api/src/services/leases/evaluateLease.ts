@@ -1,4 +1,4 @@
-import type { LeaseRecord, RuleResult, Flag } from '@truelinks/shared';
+import type { LeaseDocument, LeaseRecord, RuleResult, Flag } from '@truelinks/shared';
 import type { Repositories } from '../db/repositories/index.ts';
 import { matchUnit, type UnitMatch } from './unitMatch.ts';
 import { evaluateRules } from './rules.ts';
@@ -7,6 +7,7 @@ import { detectFlags } from './flags.ts';
 export interface EvaluateLeaseInput {
   record: LeaseRecord;
   pageUnitId?: string | null;
+  document?: Pick<LeaseDocument, 'textSource' | 'clauseSplit'>;
 }
 
 export interface EvaluateLeaseResult {
@@ -38,6 +39,7 @@ export async function evaluateLease(
     record: input.record,
     unitMatch,
     pageUnitId: input.pageUnitId,
+    document: input.document,
   });
 
   const passCount = ruleResults.filter((r) => r.status === 'PASS').length;

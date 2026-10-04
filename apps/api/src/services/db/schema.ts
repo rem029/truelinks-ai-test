@@ -46,6 +46,7 @@ export interface LeasesTable {
   rule_results_json: string;
   ruleset_version: string;
   status: string;
+  analysis_status: string;
   override_reason: string | null;
   confirmed_at: string | null;
   created_at: string;

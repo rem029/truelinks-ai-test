@@ -43,6 +43,10 @@ export type LeaseRecord = z.infer<typeof LeaseRecord>;
 export const LeaseStatus = z.enum(['draft', 'confirmed']);
 export type LeaseStatus = z.infer<typeof LeaseStatus>;
 
+// The background full-document analysis (conflicts, judgement concerns) that runs after the fast extraction
+export const LeaseAnalysisStatus = z.enum(['pending', 'done', 'failed']);
+export type LeaseAnalysisStatus = z.infer<typeof LeaseAnalysisStatus>;
+
 export const Lease = z.object({
   id: z.string(),
   conversationId: z.string(),
@@ -52,6 +56,7 @@ export const Lease = z.object({
   ruleResults: z.array(RuleResult),
   rulesetVersion: z.string(),
   status: LeaseStatus,
+  analysisStatus: LeaseAnalysisStatus,
   overrideReason: z.string().nullable(),
   confirmedAt: z.iso.datetime({ offset: true }).nullable(),
   createdAt: z.iso.datetime({ offset: true }),

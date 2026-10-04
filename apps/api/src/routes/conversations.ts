@@ -7,6 +7,8 @@ import type { ModelProvider } from '../services/agents/modelProvider/types.ts';
 import { createConversation } from '../services/conversations/createConversation.ts';
 import { getConversation } from '../services/conversations/getConversation.ts';
 import { ingestLease } from '../services/leases/ingest/ingestLease.ts';
+import { extractLease } from '../services/leases/extract/extractLease.ts';
+import { analyzeLease } from '../services/leases/extract/analyzeLease.ts';
 import { HttpError } from '../utils/httpError.ts';
 
 const CreateConversationBody = z.object({
@@ -58,8 +60,14 @@ export function createConversationsRouter(
       },
       { repositories, uploadDir, modelProvider }
     );
+    const lease = await extractLease(result.document, { repositories, modelProvider });
 
-    res.status(201).json(result);
+    // The owner starts reviewing now; the full analysis adds its flags when done (lease.analysisStatus)
+    analyzeLease(lease, result.document, { repositories, modelProvider }).catch((err: unknown) => {
+      console.error(`lease analyze lease=${lease.id} could not be saved`, err);
+    });
+
+    res.status(201).json({ ...result, lease });
   });
 
   return router;

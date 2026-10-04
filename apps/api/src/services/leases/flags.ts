@@ -1,13 +1,14 @@
-import type { Flag, LeaseRecord, Severity } from '@truelinks/shared';
+import type { Flag, LeaseDocument, LeaseRecord, Severity } from '@truelinks/shared';
 import { monthsBetween } from './leaseTerm.ts';
 import { monthlyRent, compareAnnualRent } from './rent.ts';
-import { formatMoney, getClauseIds } from './leaseFields.ts';
+import { formatMoney, getClauseIds, listFields } from './leaseFields.ts';
 import { type UnitMatch, unitNotFoundReason } from './unitMatch.ts';
 
 export interface DetectFlagsInput {
   record: LeaseRecord;
   unitMatch: UnitMatch;
   pageUnitId?: string | null;
+  document?: Pick<LeaseDocument, 'textSource' | 'clauseSplit'>;
 }
 
 function flag(params: {
@@ -266,6 +267,103 @@ function unitFlags(
   return flags;
 }
 
+function unverifiedQuoteFlags(record: LeaseRecord): Flag[] {
+  const flags: Flag[] = [];
+  for (const { fieldPath, field } of listFields(record)) {
+    const source = field.source;
+    if (source?.type === 'document' && !source.verified) {
+      flags.push(
+        flag({
+          id: `UNVERIFIED_QUOTE:${fieldPath}`,
+          code: 'UNVERIFIED_QUOTE',
+          severity: 'medium',
+          message: `Quote for ${fieldPath} not found in clause ${source.clauseId}`,
+          fieldPaths: [fieldPath],
+          clauseIds: [source.clauseId],
+        })
+      );
+    }
+  }
+  return flags;
+}
+
+// Amounts are only trusted in QAR; anything else goes to the owner, never through a conversion
+function currencyFlags(record: LeaseRecord): Flag[] {
+  const amounts = [record.rent.amount, record.rent.monthly, record.rent.annual, record.deposit];
+  if (amounts.every((f) => f.value === null)) {
+    return [];
+  }
+
+  const currency = record.currency.value?.trim().toUpperCase() || null;
+  if (currency === null) {
+    return [
+      flag({
+        code: 'CURRENCY_MISSING',
+        severity: 'high',
+        message: 'Currency not stated; owner to confirm amounts are in QAR',
+        fieldPaths: ['currency'],
+        clauseIds: [],
+      }),
+    ];
+  }
+
+  if (currency !== 'QAR') {
+    return [
+      flag({
+        code: 'CURRENCY_NOT_QAR',
+        severity: 'high',
+        message: `Amounts are in ${currency}, not QAR; owner to confirm (no conversion applied)`,
+        fieldPaths: ['currency'],
+        clauseIds: getClauseIds(record.currency),
+      }),
+    ];
+  }
+
+  return [];
+}
+
+function documentFlags(document?: Pick<LeaseDocument, 'textSource' | 'clauseSplit'>): Flag[] {
+  if (!document) {
+    return [];
+  }
+
+  const flags: Flag[] = [];
+  if (document.textSource === 'image') {
+    flags.push(
+      flag({
+        code: 'TEXT_FROM_IMAGE',
+        severity: 'medium',
+        message: 'Text transcribed from image; quotes checked against the transcription',
+        fieldPaths: [],
+        clauseIds: [],
+      })
+    );
+  }
+  if (document.clauseSplit === 'ai') {
+    flags.push(
+      flag({
+        code: 'CLAUSE_SPLIT_AI',
+        severity: 'low',
+        message: 'Clauses were split by AI; check clause boundaries',
+        fieldPaths: [],
+        clauseIds: [],
+      })
+    );
+  }
+  if (document.clauseSplit === 'paragraphs') {
+    flags.push(
+      flag({
+        code: 'CLAUSE_SPLIT_PARAGRAPHS',
+        severity: 'low',
+        message: 'No clause headings found; clauses are paragraphs',
+        fieldPaths: [],
+        clauseIds: [],
+      })
+    );
+  }
+  return flags;
+}
+
 export function detectFlags(input: DetectFlagsInput): Flag[] {
   return [
     ...missingFieldFlags(input.record),
@@ -274,5 +372,8 @@ export function detectFlags(input: DetectFlagsInput): Flag[] {
     ...signatureFlags(input.record),
     ...oddValueFlags(input.record),
     ...unitFlags(input.record, input.unitMatch, input.pageUnitId),
+    ...unverifiedQuoteFlags(input.record),
+    ...currencyFlags(input.record),
+    ...documentFlags(input.document),
   ];
 }

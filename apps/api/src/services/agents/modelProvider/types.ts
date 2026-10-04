@@ -28,6 +28,10 @@ export interface CompletionRequest<T = unknown> {
   tools?: ToolSpec[];
   responseSchema?: z.ZodType<T>;
   images?: ImageInput[];
+  // How much the model thinks before answering; omitted means the model's default
+  reasoningEffort?: 'low' | 'medium' | 'high';
+  // Simple copying jobs use the fast model; judgement uses the default. Omitted = 'default'
+  modelTier?: 'fast' | 'default';
 }
 
 export interface CompletionResult<T = unknown> {

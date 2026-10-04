@@ -1,4 +1,5 @@
 import { LeaseRecord } from '@truelinks/shared';
+import type { LeaseAnalysis } from './extract/extractionSchema.ts';
 
 function field<T>(value: T, clauseId: string, quote: string) {
   return {
@@ -297,3 +298,52 @@ const rawSampleLeaseRecords: Record<string, LeaseRecord> = {
 export const sampleLeaseRecords: Record<string, LeaseRecord> = Object.fromEntries(
   Object.entries(rawSampleLeaseRecords).map(([key, record]) => [key, LeaseRecord.parse(record)])
 );
+
+export const sampleLeaseAnalyses: Record<string, LeaseAnalysis> = {
+  'lease-02-problems-MC-B-0902.pdf': {
+    conflicts: [],
+    concerns: [
+      {
+        fieldPath: 'renewal',
+        clauseId: '5',
+        message: 'Renewal terms vague',
+      },
+    ],
+  },
+  'lease-05-unknown-unit-rent-conflict.pdf': {
+    conflicts: [
+      {
+        fieldPath: 'rent.monthly',
+        candidates: [
+          {
+            value: '8500',
+            clauseId: '2',
+            quote: 'QAR 8,500 (Eight Thousand Five Hundred Qatari Riyals) per month',
+          },
+          {
+            value: '8000',
+            clauseId: '5',
+            quote: 'Rent of QAR 8,000 per month',
+          },
+        ],
+      },
+    ],
+    concerns: [],
+  },
+};
+
+// What the stub returns for a document it has no fixture for: nothing found, so every field goes to the owner
+export const blankLeaseRecord: LeaseRecord = LeaseRecord.parse({
+  landlord: { name: missing(), signed: missing() },
+  tenant: { name: missing(), signed: missing() },
+  unit: { unitId: missing(), label: missing(), parkingBay: missing() },
+  commencementDate: missing(),
+  expiryDate: missing(),
+  termMonths: missing(),
+  rent: { amount: missing(), frequency: missing(), monthly: missing(), annual: missing() },
+  currency: missing(),
+  deposit: missing(),
+  escalation: { text: missing(), isDefined: missing() },
+  renewal: missing(),
+  termination: missing(),
+});

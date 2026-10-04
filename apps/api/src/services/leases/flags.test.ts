@@ -114,3 +114,69 @@ describe('detectFlags per sample lease', () => {
     );
   });
 });
+
+describe('detectFlags data-quality checks', () => {
+  const clean = sampleLeaseRecords['lease-01-clean-MC-B-1204.pdf']!;
+  const unitMatch = matchUnit(clean, allUnits);
+
+  function codes(record: typeof clean, document?: Parameters<typeof detectFlags>[0]['document']) {
+    return detectFlags({ record, unitMatch, document }).map((f) => f.code);
+  }
+
+  it('flags a document quote that was not verified', () => {
+    const record = {
+      ...clean,
+      deposit: { ...clean.deposit, source: { type: 'document' as const, clauseId: '3', quote: 'made up', verified: false } },
+    };
+    const flags = detectFlags({ record, unitMatch });
+    const unverified = flags.find((f) => f.code === 'UNVERIFIED_QUOTE');
+    expect(unverified?.message).toBe('Quote for deposit not found in clause 3');
+    expect(unverified?.fieldPaths).toEqual(['deposit']);
+  });
+
+  it('never flags a user-sourced field as unverified', () => {
+    const record = {
+      ...clean,
+      deposit: { ...clean.deposit, source: { type: 'user' as const, messageId: 'm1' } },
+    };
+    expect(codes(record)).not.toContain('UNVERIFIED_QUOTE');
+  });
+
+  it('flags a missing currency when amounts are present', () => {
+    const record = { ...clean, currency: { ...clean.currency, value: null, source: null } };
+    const flags = detectFlags({ record, unitMatch });
+    const currency = flags.find((f) => f.code === 'CURRENCY_MISSING');
+    expect(currency?.severity).toBe('high');
+    expect(currency?.message).toBe('Currency not stated; owner to confirm amounts are in QAR');
+  });
+
+  it('flags a non-QAR currency without converting', () => {
+    const record = { ...clean, currency: { ...clean.currency, value: 'usd' } };
+    const flags = detectFlags({ record, unitMatch });
+    const currency = flags.find((f) => f.code === 'CURRENCY_NOT_QAR');
+    expect(currency?.severity).toBe('high');
+    expect(currency?.message).toBe('Amounts are in USD, not QAR; owner to confirm (no conversion applied)');
+    expect(record.rent.amount.value).toBe(9500);
+  });
+
+  it('does not flag currency when the lease states no amounts', () => {
+    const empty = { ...clean.rent.amount, value: null, source: null };
+    const record = {
+      ...clean,
+      currency: { ...clean.currency, value: null, source: null },
+      rent: { ...clean.rent, amount: empty, monthly: empty, annual: empty },
+      deposit: empty,
+    };
+    expect(codes(record)).not.toContain('CURRENCY_MISSING');
+  });
+
+  it('flags text transcribed from an image', () => {
+    expect(codes(clean, { textSource: 'image', clauseSplit: 'headings' })).toEqual(['TEXT_FROM_IMAGE']);
+  });
+
+  it('flags an AI or paragraph clause split', () => {
+    expect(codes(clean, { textSource: 'text', clauseSplit: 'ai' })).toEqual(['CLAUSE_SPLIT_AI']);
+    expect(codes(clean, { textSource: 'text', clauseSplit: 'paragraphs' })).toEqual(['CLAUSE_SPLIT_PARAGRAPHS']);
+    expect(codes(clean, { textSource: 'text', clauseSplit: 'headings' })).toEqual([]);
+  });
+});

@@ -14,6 +14,7 @@ const repositories = createRepositories(db);
 const modelProvider = createModelProvider({
   apiKey: env.OPENROUTER_API_KEY,
   model: env.OPENROUTER_MODEL,
+  fastModel: env.OPENROUTER_FAST_MODEL,
 });
 const app = createApp({ repositories, modelProvider, uploadDir: env.UPLOAD_DIR });
 

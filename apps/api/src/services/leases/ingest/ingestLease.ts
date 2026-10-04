@@ -48,6 +48,11 @@ export async function ingestLease(
     throw new HttpError(400, `Conversation ${conversationId} is not open (status: '${conversation.status}')`);
   }
 
+  // One lease per conversation; checked before reading so a rejected upload leaves nothing behind
+  if (await repositories.leases.getByConversation(conversationId)) {
+    throw new HttpError(409, `Conversation ${conversationId} already has a lease; start a new conversation for another lease`);
+  }
+
   if (!isSupportedMimeType(file.mimeType)) {
     throw new HttpError(400, `Unsupported document type '${file.mimeType}'. Only PDF, DOCX, PNG, and JPEG files are supported.`);
   }
