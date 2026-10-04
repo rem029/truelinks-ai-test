@@ -4,14 +4,61 @@ Goal: upload lease in chat → sourced record, flags, rule results, unit match �
 
 ## Phase 1 — Ingest
 ### Tasks
-- [ ] Upload in conversation: PDF (unpdf), DOCX (mammoth, if quick) → text → numbered clauses
-- [ ] (Stretch #3) Image / scanned PDF → vision transcription into clauses + "transcribed from image" flag
-- [ ] Optional unit context (upload started from a unit page)
+- [x] Upload in conversation: PDF (unpdf), DOCX (mammoth, if quick) → text → numbered clauses
+- [x] Track pages: the PDF is read page by page (unpdf), and each clause stores `{id, heading, text, page}`. A clause that spans pages stores where it starts and where it ends. Keep the original file so the UI can open it at that page. DOCX has no reliable page numbers, so its clauses have none.
+- [x] (Stretch #3) Image → vision transcription into clauses, document marked `textSource: image` (scanned PDF still rejected)
+- [x] AI heading detection when the rules find no numbered heading; owner checks an `ai`/`paragraphs` split
+- [x] Samples: multi-page PDF, DOCX, image, inline headings
+- [x] Optional unit context (upload started from a unit page)
 - [x] Sample leases in `data/sample-leases/`
 ### Results
 - 5 PDFs + `expected.json` (ground truth per rule) via `npm run samples:leases` (`scripts/generate-sample-leases.mjs`, pdfkit).
 - Term convention: expiry date is inclusive (1 Nov 2026 → 31 Oct 2028 = 24 months). R4 must use this.
 - Lease 05 has a deliberate rent conflict (8,500 vs 8,000) — extraction must flag, not pick silently.
+- **Ingest** (`apps/api/src/services/leases/ingest/`):
+  - `readDocument.ts` reads a PDF page by page (unpdf) or a DOCX as one block (mammoth). `SUPPORTED_MIME_TYPES` is the only list of accepted types, and it also gives the stored file extension.
+  - `splitClauses.ts` is pure and returns `{clauses, usedFallback}`.
+    - A numbered heading counts only when it is the next number in sequence, so "1 November 2026" on a wrapped line isn't a heading.
+    - Short all-caps lines are sections (slug ids; a repeated slug gets `-2`, `-3`). The first line is always the title and goes into `preamble`.
+    - With no headings, it falls back to paragraphs (`p1`…).
+    - Lines are joined with a space, except after a trailing hyphen: pdfkit wraps `MC-\nB-1204`.
+    - Each clause stores `pages: {start, end}` (null for DOCX).
+  - `ingestLease.ts` checks the conversation is an open lease conversation and the type is supported. It rejects a document with no text (422, "scanned PDFs are not supported yet"), saves the original as `<documentId>.pdf|.docx` in `UPLOAD_DIR`, stores the document and adds a user message with the attachment. It logs `lease ingest … pages= clauses= fallback= ms=`.
+- **Storage:** migration `002_documents` adds a `documents` table (clauses as JSON, `file_path` relative to `UPLOAD_DIR`). `documentRepository` is in `Repositories`. The shared types are `Clause`, `PageRange` and `LeaseDocument`.
+- **API:**
+  - `POST /api/conversations`: `{kind, unitId?}`; an unknown unit gives 400. This is the unit context.
+  - `GET /api/conversations/:id`: conversation, messages and documents.
+  - `POST /api/conversations/:id/lease-document`: multer, in memory, 10 MB.
+  - `GET /api/documents/:id/file`: inline, so the UI can open `#page=N`. A missing file gives 404 without leaking the server path.
+  - Errors: a small `HttpError` (status + details), handled by the one error handler. A `MulterError` gives 400.
+- **Tests:** splitter cases (sequence guard, preamble, pages across two pages, duplicate slugs, both fallbacks, null pages, hyphen join). All 5 sample PDFs split into `preamble, parties, premises, 1..n, signatures`, and **every quote in `sampleLeaseRecords` is found in the clause it cites**: the phase 2 quote check depends on this. The API tests cover create, upload, GET, the file bytes, a .txt upload (400), an issue conversation (400) and a missing file (404). 177 tests pass and typecheck is clean.
+- **End-to-end:** I uploaded all 5 PDFs to the dev API through curl. Every lease split into the expected clauses, the file served back as `application/pdf`, and an unknown unit or a .txt got a 400.
+- **Follow-up (owner request): formats, multi-page, AI headings.**
+  - Images: PNG/JPEG go to the model (`lease-transcription`, prompt in `services/agents/prompts/leaseTranscription.md`) and come back as text, which is then split as usual. The document stores `textSource: 'text' | 'image'`. The stub returns `data/sample-leases/<name>.txt`.
+  - Headings: `splitClauses.ts` is now `toLines` / `findHeadings` / `buildClauses` / `paragraphClauses`.
+    - When the rules find no numbered heading, `detectHeadings.ts` asks the model (`lease-clause-headings`) only for `{line, id}` pairs.
+    - Code validates them: in range, non-empty, ascending, unique IDs, at most 200. It cuts the text itself, keeping an inline heading line in the clause text so first-sentence quotes are kept.
+    - Invalid output or a model failure → keep the rules split or use paragraphs. `clauseSplit: 'headings' | 'ai' | 'paragraphs'` is stored for the phase 2/4 flag and the owner check.
+  - Storage: `text_source` and `clause_split` columns, added to `002_documents` itself because it was never committed. Migrations moved to `apps/api/src/migrations/`. Relative imports now use `.ts`.
+  - Samples:
+    - lease-06: 4 pages; clauses 11 and 19 span pages; deposit on p2, signatures on p4.
+    - lease-07: DOCX. R6 PASS with the reason "Rent is stated annually (QAR 132,000); no monthly figure to reconcile".
+    - lease-08: PNG, rendered with the Geist font. There are no system fonts here and pdfkit's Helvetica isn't embedded, so the first render came out blank. The generator now fails if the image is blank.
+    - lease-09: inline headings.
+    - PDFs have a fixed CreationDate, so regenerating them is byte-stable.
+    - New dev-only deps: `docx`, `@napi-rs/canvas`, `geist`.
+  - Tests: 198 pass and typecheck is clean.
+  - End-to-end on the dev API with the **real model (mimo)**:
+    - lease-06 → 26 clauses, `11@2-3`, `19@3-4`.
+    - lease-07 DOCX → correct ids, pages null.
+    - lease-08 PNG → transcribed in 18s (2.1k/1.2k tokens); all 20 fixture quotes verified against the real transcript.
+    - lease-09 → `split=ai` in 1.7s; clauses `1`–`6`, each keeping its inline first sentence.
+- **Known limits:**
+  - Scanned PDFs (no text layer) are still rejected. Next step: render pages with unpdf + @napi-rs/canvas and use the image path. That needs canvas as a runtime dependency.
+  - One image = one page; multi-image leases are not supported yet.
+  - lease-09 with the AI split has no `parties`/`premises` clauses (they're prose in the preamble), so extraction cites `preamble`.
+  - The DOCX sample isn't byte-stable on regeneration (`docx` writes timestamps).
+  - The file is written before the DB insert, so a failed insert leaves an orphan file.
 
 ## Phase 2 — Extract + verify
 ### Tasks

@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { defineTool, type Tool } from './toolRegistry.js';
+import { defineTool, type Tool } from './toolRegistry.ts';
 
 export const AskUserArgs = z.object({
   question: z.string().min(1),

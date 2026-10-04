@@ -1,6 +1,6 @@
 import type { Kysely } from 'kysely';
 import { Unit, type UnitStatus } from '@truelinks/shared';
-import type { Database, UnitsTable } from '../schema.js';
+import type { Database, UnitsTable } from '../schema.ts';
 
 export interface UnitRepository {
   list(): Promise<Unit[]>;

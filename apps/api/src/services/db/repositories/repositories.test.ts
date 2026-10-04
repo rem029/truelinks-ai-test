@@ -7,12 +7,14 @@ import {
   type Issue,
   type WorkOrder,
   type Ruleset,
+  type LeaseDocument,
 } from '@truelinks/shared';
-import { createDb } from '../db.js';
-import { migrateToLatest } from '../migrations/migrate.js';
-import { seed } from '../seed.js';
-import { createRepositories, type Repositories } from './index.js';
-import type { Database } from '../schema.js';
+
+import { createDb } from '../db.ts';
+import { migrateToLatest } from '../../../migrations/migrate.ts';
+import { seed } from '../seed.ts';
+import { createRepositories, type Repositories } from './index.ts';
+import type { Database } from '../schema.ts';
 
 describe('Repositories round-trip with JSON column boundary parsing', () => {
   let db: Kysely<Database>;
@@ -319,4 +321,59 @@ describe('Repositories round-trip with JSON column boundary parsing', () => {
       'WorkOrder NON_EXISTENT not found'
     );
   });
+
+  it('DocumentRepository: create, get, and listByConversation', async () => {
+    const conv: Conversation = {
+      id: 'conv-doc-1',
+      kind: 'lease',
+      unitId: 'MC-B-1204',
+      status: 'open',
+      createdAt: '2026-10-04T12:00:00.000Z',
+      updatedAt: '2026-10-04T12:00:00.000Z',
+    };
+    await repos.conversations.create(conv);
+
+    const doc: LeaseDocument = {
+      id: 'doc-1',
+      conversationId: 'conv-doc-1',
+      filename: 'lease.pdf',
+      mimeType: 'application/pdf',
+      textSource: 'text',
+      clauseSplit: 'headings',
+      pageCount: 3,
+      clauses: [
+        {
+          id: 'preamble',
+          heading: 'Preamble',
+          text: 'Lease Agreement',
+          pages: { start: 1, end: 1 },
+        },
+        {
+          id: '1',
+          heading: 'Term',
+          text: '12 months',
+          pages: { start: 1, end: 2 },
+        },
+      ],
+      createdAt: '2026-10-04T12:00:00.000Z',
+    };
+
+    await repos.documents.create(doc, 'doc-1.pdf');
+
+    const fetched = await repos.documents.get('doc-1');
+    expect(fetched).not.toBeNull();
+    expect(fetched?.filePath).toBe('doc-1.pdf');
+    expect(fetched?.document).toEqual(doc);
+
+    const missing = await repos.documents.get('doc-unknown');
+    expect(missing).toBeNull();
+
+    const list = await repos.documents.listByConversation('conv-doc-1');
+    expect(list).toHaveLength(1);
+    expect(list[0]).toEqual(doc);
+
+    const emptyList = await repos.documents.listByConversation('conv-other');
+    expect(emptyList).toEqual([]);
+  });
 });
+

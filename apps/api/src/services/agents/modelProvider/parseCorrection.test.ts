@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { parseCorrection } from './parseCorrection.js';
+import { parseCorrection } from './parseCorrection.ts';
 
 describe('parseCorrection', () => {
   const cases: Array<{

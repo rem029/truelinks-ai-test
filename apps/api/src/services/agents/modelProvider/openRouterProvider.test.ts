@@ -7,7 +7,7 @@ import {
   mapToolsToOpenAI,
   parseOpenAIToolCalls,
   type OpenAIClientLike,
-} from './openRouterProvider.js';
+} from './openRouterProvider.ts';
 
 describe('openRouterProvider', () => {
   describe('message & tool mapping', () => {

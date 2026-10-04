@@ -1,8 +1,8 @@
 import { describe, it, expect } from 'vitest';
-import { loadUnits } from '../db/seed.js';
-import { matchUnit } from './unitMatch.js';
-import { detectFlags } from './flags.js';
-import { sampleLeaseRecords } from './sampleLeaseRecords.js';
+import { loadUnits } from '../db/seed.ts';
+import { matchUnit } from './unitMatch.ts';
+import { detectFlags } from './flags.ts';
+import { sampleLeaseRecords } from './sampleLeaseRecords.ts';
 
 const allUnits = loadUnits();
 

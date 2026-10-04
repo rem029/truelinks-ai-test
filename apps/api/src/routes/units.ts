@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import type { UnitRepository } from '../services/db/repositories/unitRepository.js';
+import type { UnitRepository } from '../services/db/repositories/unitRepository.ts';
 
 export function createUnitsRouter(unitRepository: UnitRepository): Router {
   const router = Router();

@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { createModelProvider } from './index.js';
+import { createModelProvider } from './index.ts';
 
 describe('createModelProvider', () => {
   it('selects stub provider when apiKey is undefined or empty', () => {

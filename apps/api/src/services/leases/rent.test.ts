@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import type { LeaseRecord } from '@truelinks/shared';
-import { monthlyRent, compareAnnualRent } from './rent.js';
+import { monthlyRent, compareAnnualRent } from './rent.ts';
 
 function createMockRent(overrides: Partial<{
   amount: number | null;

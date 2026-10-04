@@ -1,8 +1,8 @@
 import type { LeaseRecord, RuleResult, Flag } from '@truelinks/shared';
-import type { Repositories } from '../db/repositories/index.js';
-import { matchUnit, type UnitMatch } from './unitMatch.js';
-import { evaluateRules } from './rules.js';
-import { detectFlags } from './flags.js';
+import type { Repositories } from '../db/repositories/index.ts';
+import { matchUnit, type UnitMatch } from './unitMatch.ts';
+import { evaluateRules } from './rules.ts';
+import { detectFlags } from './flags.ts';
 
 export interface EvaluateLeaseInput {
   record: LeaseRecord;

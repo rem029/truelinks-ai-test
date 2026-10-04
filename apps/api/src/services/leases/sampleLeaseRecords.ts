@@ -192,6 +192,105 @@ const rawSampleLeaseRecords: Record<string, LeaseRecord> = {
     renewal: field('Renewal is subject to a new lease agreement.', '6', 'Renewal is subject to a new lease agreement.'),
     termination: field("Either party may terminate with two (2) months' written notice after the first twelve (12) months.", '7', "terminate with two (2) months' written notice after the first twelve (12) months."),
   },
+
+  'lease-06-long-MC-B-1204.pdf': {
+    landlord: {
+      name: field('Marina Crest Holdings W.L.L.', 'parties', 'Landlord: Marina Crest Holdings W.L.L., Lusail, Doha, State of Qatar (the "Landlord").'),
+      signed: field(true, 'signatures', '/s/ Khalid Al-Mansoori'),
+    },
+    tenant: {
+      name: field('Daniel Okafor', 'parties', 'Tenant: Daniel Okafor, QID 28756401234 (the "Tenant").'),
+      signed: field(true, 'signatures', '/s/ Daniel Okafor'),
+    },
+    unit: {
+      unitId: field('MC-B-1204', 'premises', '(Unit ID MC-B-1204)'),
+      label: field('Apartment 1204', 'premises', 'Apartment 1204, Tower B, Marina Crest Residences'),
+      parkingBay: field('B-77', 'premises', 'parking bay B-77'),
+    },
+    commencementDate: field('2027-02-01', '2', '1 February 2027'),
+    expiryDate: field('2030-01-31', '2', '31 January 2030'),
+    termMonths: field(36, '2', 'thirty-six (36) months'),
+    rent: {
+      amount: field(9800, '3', 'QAR 9,800 (Nine Thousand Eight Hundred Qatari Riyals)'),
+      frequency: field('monthly', '3', 'per month, payable monthly in advance'),
+      monthly: field(9800, '3', 'QAR 9,800 (Nine Thousand Eight Hundred Qatari Riyals) per month'),
+      annual: field(117600, '3', 'annual rent is QAR 117,600'),
+    },
+    currency: field('QAR', '3', 'QAR 9,800'),
+    deposit: field(19600, '4', 'security deposit of QAR 19,600'),
+    escalation: {
+      text: field('The monthly rent shall increase by five percent (5%) on each anniversary of the Commencement Date.', '5', 'increase by five percent (5%) on each anniversary of the Commencement Date'),
+      isDefined: field(true, '5', 'increase by five percent (5%) on each anniversary of the Commencement Date'),
+    },
+    renewal: field('The Tenant may renew this Lease for a further twelve (12) months by giving written notice not less than sixty (60) days before the Expiry Date, on terms to be confirmed by the Landlord in writing.', '14', 'renew this Lease for a further twelve (12) months'),
+    termination: field("Either party may terminate this Lease by giving two (2) months' written notice after the first twelve (12) months of the term. Early termination by the Tenant before that date requires payment of one (1) month's rent as compensation.", '15', "terminate this Lease by giving two (2) months' written notice"),
+  },
+
+  'lease-07-docx-MC-A-0302.docx': {
+    landlord: {
+      name: field('Marina Crest Holdings W.L.L.', 'parties', 'Landlord: Marina Crest Holdings W.L.L., Lusail, Doha, State of Qatar (the "Landlord").'),
+      signed: field(true, 'signatures', '/s/ Khalid Al-Mansoori'),
+    },
+    tenant: {
+      name: field('Sarah Jenkins', 'parties', 'Tenant: Sarah Jenkins, QID 28912345678 (the "Tenant").'),
+      signed: field(true, 'signatures', '/s/ Sarah Jenkins'),
+    },
+    unit: {
+      unitId: field('MC-A-0302', 'premises', '(Unit ID MC-A-0302)'),
+      label: field('Apartment 0302', 'premises', 'Apartment 0302, Tower A, Marina Crest Residences'),
+      parkingBay: field('A-13', 'premises', 'parking bay A-13'),
+    },
+    commencementDate: field('2027-03-01', '1', '1 March 2027'),
+    expiryDate: field('2029-02-28', '1', '28 February 2029'),
+    termMonths: field(24, '1', 'twenty-four (24) months'),
+    rent: {
+      amount: field(132000, '2', 'QAR 132,000 per annum'),
+      frequency: field('annual', '2', 'per annum, payable annually in advance'),
+      monthly: missing(),
+      annual: field(132000, '2', 'total annual rent is QAR 132,000'),
+    },
+    currency: field('QAR', '2', 'QAR 132,000'),
+    deposit: field(11000, '3', 'security deposit of QAR 11,000'),
+    escalation: {
+      text: field('The rent shall increase by five percent (5%) on each anniversary of the Commencement Date.', '4', 'increase by five percent (5%) on each anniversary of the Commencement Date'),
+      isDefined: field(true, '4', 'increase by five percent (5%) on each anniversary of the Commencement Date'),
+    },
+    renewal: field('The Tenant may renew this Lease for a further twelve (12) months by giving written notice not less than sixty (60) days before the Expiry Date, on terms to be confirmed by the Landlord in writing.', '5', 'renew this Lease for a further twelve (12) months'),
+    termination: field("Either party may terminate this Lease by giving two (2) months' written notice after the first twelve (12) months of the term. Early termination by the Tenant before that date requires payment of one (1) month's rent as compensation.", '6', "terminate this Lease by giving two (2) months' written notice"),
+  },
+
+  'lease-08-image-MC-A-0301.png': {
+    landlord: {
+      name: field('Marina Crest Holdings W.L.L.', 'parties', 'Landlord: Marina Crest Holdings W.L.L., Lusail, Doha, State of Qatar (the "Landlord").'),
+      signed: field(true, 'signatures', '/s/ Khalid Al-Mansoori'),
+    },
+    tenant: {
+      name: field('Tariq Mansour', 'parties', 'Tenant: Tariq Mansour, QID 28512345678 (the "Tenant").'),
+      signed: field(true, 'signatures', '/s/ Tariq Mansour'),
+    },
+    unit: {
+      unitId: field('MC-A-0301', 'premises', '(Unit ID MC-A-0301)'),
+      label: field('Apartment 0301', 'premises', 'Apartment 0301, Tower A, Marina Crest Residences'),
+      parkingBay: field('A-12', 'premises', 'parking bay A-12'),
+    },
+    commencementDate: field('2026-12-01', '1', '1 December 2026'),
+    expiryDate: field('2027-11-30', '1', '30 November 2027'),
+    termMonths: field(12, '1', 'twelve (12) months'),
+    rent: {
+      amount: field(12000, '2', 'QAR 12,000 (Twelve Thousand Qatari Riyals)'),
+      frequency: field('monthly', '2', 'per month, payable monthly in advance'),
+      monthly: field(12000, '2', 'QAR 12,000 (Twelve Thousand Qatari Riyals) per month'),
+      annual: field(144000, '2', 'annual rent is QAR 144,000'),
+    },
+    currency: field('QAR', '2', 'QAR 12,000'),
+    deposit: field(12000, '3', 'security deposit of QAR 12,000'),
+    escalation: {
+      text: field('The monthly rent shall increase by five percent (5%) on each anniversary of the Commencement Date.', '4', 'increase by five percent (5%) on each anniversary of the Commencement Date'),
+      isDefined: field(true, '4', 'increase by five percent (5%) on each anniversary of the Commencement Date'),
+    },
+    renewal: field('The Tenant may renew this Lease for a further twelve (12) months by giving written notice not less than sixty (60) days before the Expiry Date, on terms to be confirmed by the Landlord in writing.', '5', 'renew this Lease for a further twelve (12) months'),
+    termination: field("Either party may terminate this Lease by giving two (2) months' written notice after the first twelve (12) months of the term. Early termination by the Tenant before that date requires payment of one (1) month's rent as compensation.", '6', "terminate this Lease by giving two (2) months' written notice"),
+  },
 };
 
 // Validate each fixture with LeaseRecord.parse so schema drift is caught immediately

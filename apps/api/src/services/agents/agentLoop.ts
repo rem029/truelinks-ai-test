@@ -1,5 +1,5 @@
-import type { ChatMessage, ModelProvider } from './modelProvider/types.js';
-import { runTool, toToolSpecs, type Tool } from './toolRegistry.js';
+import type { ChatMessage, ModelProvider } from './modelProvider/types.ts';
+import { runTool, toToolSpecs, type Tool } from './toolRegistry.ts';
 
 export type ToolCallLog =
   | { name: string; args: unknown; ok: true; result: unknown; ms: number }

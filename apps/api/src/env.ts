@@ -21,6 +21,10 @@ function resolveDatabaseUrl(rawUrl: string): string {
   return `file:${resolvedPath}`;
 }
 
+function resolveUploadDir(rawPath: string): string {
+  return isAbsolute(rawPath) ? rawPath : resolve(REPO_ROOT, rawPath);
+}
+
 const envSchema = z.object({
   API_PORT: z
     .preprocess((val) => (val === '' || val === undefined ? undefined : val), z.coerce.number().int().min(1).max(65535))
@@ -29,6 +33,10 @@ const envSchema = z.object({
     .string()
     .default('file:./var/app.db')
     .transform(resolveDatabaseUrl),
+  UPLOAD_DIR: z
+    .string()
+    .default('./var/uploads')
+    .transform(resolveUploadDir),
   OPENROUTER_API_KEY: z
     .preprocess((val) => (typeof val === 'string' && val.trim() === '' ? undefined : val), z.string().optional()),
   OPENROUTER_MODEL: z
@@ -36,6 +44,7 @@ const envSchema = z.object({
 });
 
 const result = envSchema.safeParse(process.env);
+
 if (!result.success) {
   const issues = result.error.issues.map((issue) => `${issue.path.join('.')}: ${issue.message}`).join(', ');
   throw new Error(`Invalid environment variables: ${issues}`);

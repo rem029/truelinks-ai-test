@@ -1,8 +1,8 @@
 import type { Flag, LeaseRecord, Severity } from '@truelinks/shared';
-import { monthsBetween } from './leaseTerm.js';
-import { monthlyRent, compareAnnualRent } from './rent.js';
-import { formatMoney, getClauseIds } from './leaseFields.js';
-import { type UnitMatch, unitNotFoundReason } from './unitMatch.js';
+import { monthsBetween } from './leaseTerm.ts';
+import { monthlyRent, compareAnnualRent } from './rent.ts';
+import { formatMoney, getClauseIds } from './leaseFields.ts';
+import { type UnitMatch, unitNotFoundReason } from './unitMatch.ts';
 
 export interface DetectFlagsInput {
   record: LeaseRecord;

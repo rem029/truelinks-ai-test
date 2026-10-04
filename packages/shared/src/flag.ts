@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { Severity } from './severity.js';
+import { Severity } from './severity.ts';
 
 export const FlagReviewStatus = z.enum(['open', 'accepted', 'dismissed']);
 export type FlagReviewStatus = z.infer<typeof FlagReviewStatus>;

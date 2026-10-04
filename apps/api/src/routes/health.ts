@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import type { HealthResponse } from '@truelinks/shared';
-import type { ModelProvider } from '../services/agents/modelProvider/types.js';
+import type { ModelProvider } from '../services/agents/modelProvider/types.ts';
 
 export function createHealthRouter(provider: ModelProvider) {
   const healthRouter = Router();

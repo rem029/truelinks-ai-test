@@ -76,6 +76,19 @@ export interface WorkOrdersTable {
   created_at: string;
 }
 
+export interface DocumentsTable {
+  id: string;
+  conversation_id: string;
+  filename: string;
+  mime_type: string;
+  file_path: string;
+  text_source: string;
+  clause_split: string;
+  page_count: number | null;
+  clauses_json: string;
+  created_at: string;
+}
+
 export interface Database {
   units: UnitsTable;
   rulesets: RulesetsTable;
@@ -84,4 +97,6 @@ export interface Database {
   leases: LeasesTable;
   issues: IssuesTable;
   work_orders: WorkOrdersTable;
+  documents: DocumentsTable;
 }
+

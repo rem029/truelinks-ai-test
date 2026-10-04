@@ -1,5 +1,7 @@
 import type { Request, Response, NextFunction } from 'express';
 import { ZodError } from 'zod';
+import { MulterError } from 'multer';
+import { HttpError } from '../utils/httpError.ts';
 
 export function errorHandler(
   err: unknown,
@@ -11,6 +13,22 @@ export function errorHandler(
     res.status(400).json({
       error: 'Validation error',
       details: err.issues,
+    });
+    return;
+  }
+
+  if (err instanceof MulterError) {
+    res.status(400).json({
+      error: err.message,
+      details: { code: err.code, field: err.field },
+    });
+    return;
+  }
+
+  if (err instanceof HttpError) {
+    res.status(err.status).json({
+      error: err.message,
+      details: err.details ?? null,
     });
     return;
   }

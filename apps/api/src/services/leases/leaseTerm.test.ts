@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { monthsBetween } from './leaseTerm.js';
+import { monthsBetween } from './leaseTerm.ts';
 
 describe('monthsBetween', () => {
   it('calculates 24 months for 2026-11-01 to 2028-10-31', () => {

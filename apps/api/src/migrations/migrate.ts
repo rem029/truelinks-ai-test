@@ -1,7 +1,7 @@
 import { Migrator, type MigrationProvider } from 'kysely/migration';
 import type { Kysely } from 'kysely';
-import { migrations } from './index.js';
-import type { Database } from '../schema.js';
+import { migrations } from './index.ts';
+import type { Database } from '../services/db/schema.ts';
 
 export const staticMigrationProvider: MigrationProvider = {
   async getMigrations() {

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { createDb } from './db.js';
+import { createDb } from './db.ts';
 
 describe('createDb', () => {
   it('creates an in-memory database instance with file::memory:', async () => {

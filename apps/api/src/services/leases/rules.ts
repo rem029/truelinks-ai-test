@@ -1,8 +1,8 @@
 import type { LeaseRecord, Ruleset, RuleResult, RuleStatus, SourcedField } from '@truelinks/shared';
-import { monthsBetween } from './leaseTerm.js';
-import { monthlyRent, compareAnnualRent } from './rent.js';
-import { formatMoney, getClauseIds } from './leaseFields.js';
-import { type UnitMatch, unitNotFoundReason } from './unitMatch.js';
+import { monthsBetween } from './leaseTerm.ts';
+import { monthlyRent, compareAnnualRent } from './rent.ts';
+import { formatMoney, getClauseIds } from './leaseFields.ts';
+import { type UnitMatch, unitNotFoundReason } from './unitMatch.ts';
 
 interface CheckContext {
   record: LeaseRecord;
@@ -238,6 +238,13 @@ const checkR6: RuleCheck = ({ record }) => {
   );
 
   if (comparison.status === 'reconciled') {
+    if (record.rent.frequency.value === 'annual' && record.rent.monthly.value === null) {
+      return {
+        status: 'PASS',
+        reason: `Rent is stated annually (${formatMoney(comparison.stated, currency)}); no monthly figure to reconcile`,
+        clauseIds,
+      };
+    }
     return {
       status: 'PASS',
       reason: `Annual rent ${formatMoney(comparison.stated, currency)} reconciles with monthly rent ${formatMoney(comparison.monthly, currency)} x 12`,

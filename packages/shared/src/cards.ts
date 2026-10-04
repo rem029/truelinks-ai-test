@@ -1,10 +1,10 @@
 import { z } from 'zod';
-import { sourcedField } from './sourcedField.js';
-import { RuleResult } from './rules.js';
-import { Flag } from './flag.js';
-import { Unit } from './unit.js';
-import { WorkOrder } from './issue.js';
-import { ActionType } from './actions.js';
+import { sourcedField } from './sourcedField.ts';
+import { RuleResult } from './rules.ts';
+import { Flag } from './flag.ts';
+import { Unit } from './unit.ts';
+import { WorkOrder } from './issue.ts';
+import { ActionType } from './actions.ts';
 
 export const FieldCard = z.object({
   id: z.string(),

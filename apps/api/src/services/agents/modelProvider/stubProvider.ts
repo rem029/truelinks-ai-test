@@ -2,9 +2,9 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { z } from 'zod';
 import { IssueCondition } from '@truelinks/shared';
-import { REPO_ROOT } from '../../../env.js';
-import type { CompletionRequest, CompletionResult, ModelProvider, ToolCall } from './types.js';
-import { parseCorrection } from './parseCorrection.js';
+import { REPO_ROOT } from '../../../env.ts';
+import type { CompletionRequest, CompletionResult, ModelProvider, ToolCall } from './types.ts';
+import { parseCorrection } from './parseCorrection.ts';
 
 const ExpectedPhotoEntrySchema = z.object({
   condition: IssueCondition,
@@ -173,6 +173,30 @@ export function createStubProvider(): ModelProvider {
       }
       if (req.purpose === 'lease-correction') {
         return leaseCorrection(req);
+      }
+      if (req.purpose === 'lease-transcription') {
+        const filename = req.images?.[0]?.filename ?? '';
+        const baseName = filename.replace(/\.[^/.]+$/, '');
+        const txtPath = resolve(REPO_ROOT, 'data/sample-leases', `${baseName}.txt`);
+        let text = '';
+        try {
+          text = readFileSync(txtPath, 'utf-8');
+        } catch {
+          text = '';
+        }
+        let output: unknown = { text };
+        if (req.responseSchema) {
+          output = req.responseSchema.parse(output);
+        }
+        return stubResult({ text: JSON.stringify(output), output: output as T });
+      }
+
+      if (req.purpose === 'lease-clause-headings') {
+        let output: unknown = { headings: [] };
+        if (req.responseSchema) {
+          output = req.responseSchema.parse(output);
+        }
+        return stubResult({ text: JSON.stringify(output), output: output as T });
       }
 
       // Task 04 will add lease extraction fixtures from data/sample-leases/expected.json here.

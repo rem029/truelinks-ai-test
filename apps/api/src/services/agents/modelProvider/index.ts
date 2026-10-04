@@ -1,8 +1,8 @@
-import type { ModelProvider } from './types.js';
-import { createStubProvider } from './stubProvider.js';
-import { createOpenRouterProvider } from './openRouterProvider.js';
+import type { ModelProvider } from './types.ts';
+import { createStubProvider } from './stubProvider.ts';
+import { createOpenRouterProvider } from './openRouterProvider.ts';
 
-export * from './types.js';
+export * from './types.ts';
 
 export interface CreateModelProviderOptions {
   apiKey?: string;

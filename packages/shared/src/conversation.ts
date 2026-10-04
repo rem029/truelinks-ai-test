@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { Card } from './cards.js';
+import { Card } from './cards.ts';
 
 export const ConversationKind = z.enum(['lease', 'issue']);
 export type ConversationKind = z.infer<typeof ConversationKind>;

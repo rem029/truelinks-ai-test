@@ -20,7 +20,7 @@ Brief: `docs/attachments/Solution-brief-explained.docx` (summary in `docs/email.
 - Model: OpenRouter (OpenAI SDK) behind a provider interface; stub provider when `OPENROUTER_API_KEY` is unset
 
 ## Folder structure
-- `apps/api/src`: `routes/` (endpoints: validate input with Zod, call a service, respond; no business logic), `services/` (business logic; no `req`/`res`) with `services/db/` (Kysely, migrations, repositories, seed) and `services/agents/` (lease + issue agents, prompt files, model provider), `middleware/` (Express middleware), `utils/` (small pure helpers). `env.ts`, `app.ts`, `server.ts` at the root.
+- `apps/api/src`: `routes/` (endpoints: validate input with Zod, call a service, respond; no business logic), `services/` (business logic; no `req`/`res`) with `services/db/` (Kysely, repositories, seed) and `services/agents/` (lease + issue agents, prompt files, model provider), `migrations/` (database migrations, numbered `NNN_name.ts`; never edit one that has been committed, add a new one), `middleware/` (Express middleware), `utils/` (small pure helpers). `env.ts`, `app.ts`, `server.ts` at the root.
 - `apps/web/src`: `pages/` (one component per screen), `components/` (reusable), `hooks/` (when needed), `store/` (Zustand, only for state shared across screens), `utils/` (helpers; `utils/api.ts` is the only place that calls `fetch`).
 - Create a folder when its first file arrives; no empty placeholder folders.
 - Tests sit next to the file they test (`rules.ts` → `rules.test.ts`).
@@ -29,6 +29,7 @@ Brief: `docs/attachments/Solution-brief-explained.docx` (summary in `docs/email.
 **Simple, easy to debug, easy to maintain.** This code is read as the standard for a team — optimise for the next reader.
 - Prefer plain functions and data over classes, patterns and abstractions. Add an abstraction only when there's a second real use (exceptions: the repository and model-provider interfaces, which exist for swapping).
 - Small files with one job. Name things for what they mean in the domain (`lease`, `unit`, `workOrder`, `ruleResult`).
+- Relative imports use the real `.ts` extension (`import { evaluateRules } from './rules.ts'`); `allowImportingTsExtensions` is on and nothing is compiled to `.js`.
 - TypeScript `strict`. No `any`; validate external input (HTTP bodies, model output, files) with Zod at the boundary, then trust the types inside.
 - Pure logic (rules, date math, unit matching, quote checks) has no I/O, so it's trivially unit-testable.
 - Errors: fail loudly with a clear message; never swallow. One Express error handler returns `{ error, details }`. Don't catch just to rethrow.
@@ -38,7 +39,7 @@ Brief: `docs/attachments/Solution-brief-explained.docx` (summary in `docs/email.
 
 ## Dependencies
 Before adding a package, check it is **actively maintained** (release in the last ~6 months, issues answered), **widely used** (strong weekly downloads, many dependents) and **has types**. Prefer the standard library or a few lines of code over a package for small things. Record why each non-obvious dependency was chosen in README → Decisions.
-Approved so far: express, zod, multer, kysely, better-sqlite3, openai, unpdf, mammoth, react, react-dom, zustand, vite, @vitejs/plugin-react, vitest; dev tooling: typescript, tsx, concurrently, @types/*, pdfkit.
+Approved so far: express, zod, multer, kysely, better-sqlite3, openai, unpdf, mammoth, react, react-dom, zustand, vite, @vitejs/plugin-react, vitest; dev tooling: typescript, tsx, concurrently, @types/*, pdfkit, docx and @napi-rs/canvas (sample lease generation only).
 
 ## Testing
 - Unit-test all deterministic logic: rule engine R1–R7, term/date math, rent normalisation, unit matching, quote verification, patch/lock logic.

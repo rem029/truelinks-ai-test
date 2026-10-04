@@ -1,5 +1,5 @@
 import type { z } from 'zod';
-import type { ToolCall, ToolSpec } from './modelProvider/types.js';
+import type { ToolCall, ToolSpec } from './modelProvider/types.ts';
 
 export type ToolResult =
   | { ok: true; result: unknown }

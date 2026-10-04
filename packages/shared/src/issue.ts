@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { Severity } from './severity.js';
+import { Severity } from './severity.ts';
 
 export const ReporterRole = z.enum(['tenant', 'inspector']);
 export type ReporterRole = z.infer<typeof ReporterRole>;

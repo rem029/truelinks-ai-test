@@ -1,6 +1,6 @@
 import type { Kysely } from 'kysely';
 import { Ruleset } from '@truelinks/shared';
-import type { Database, RulesetsTable } from '../schema.js';
+import type { Database, RulesetsTable } from '../schema.ts';
 
 export interface RulesetRepository {
   getLatest(): Promise<Ruleset | null>;

@@ -4,7 +4,7 @@ import {
   type ConversationStatus,
   Message,
 } from '@truelinks/shared';
-import type { Database, ConversationsTable, MessagesTable } from '../schema.js';
+import type { Database, ConversationsTable, MessagesTable } from '../schema.ts';
 
 export interface ConversationRepository {
   create(conversation: Conversation): Promise<Conversation>;

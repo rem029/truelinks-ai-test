@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { z } from 'zod';
-import { createStubProvider } from './stubProvider.js';
+import { createStubProvider } from './stubProvider.ts';
 
 describe('stubProvider', () => {
   const provider = createStubProvider();

@@ -1,7 +1,7 @@
 import { z } from 'zod';
-import { sourcedField } from './sourcedField.js';
-import { RuleResult } from './rules.js';
-import { Flag } from './flag.js';
+import { sourcedField } from './sourcedField.ts';
+import { RuleResult } from './rules.ts';
+import { Flag } from './flag.ts';
 
 export const RentFrequency = z.enum(['monthly', 'quarterly', 'annual']);
 export type RentFrequency = z.infer<typeof RentFrequency>;

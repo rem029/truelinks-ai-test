@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { Action } from './actions.js';
+import { Action } from './actions.ts';
 
 describe('Action union', () => {
   it('parses accept action', () => {

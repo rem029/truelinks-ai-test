@@ -78,5 +78,48 @@
       "Unit 'Apartment 1501, Tower C' not in owner records",
       "Monthly rent conflict: clause 2 says 8,500, clause 5 says 8,000"
     ]
+  },
+  "lease-06-long-MC-B-1204.pdf": {
+    "unitId": "MC-B-1204",
+    "rules": {
+      "R1": "PASS",
+      "R2": "PASS",
+      "R3": "PASS",
+      "R4": "PASS",
+      "R5": "PASS",
+      "R6": "PASS",
+      "R7": "PASS"
+    },
+    "flags": []
+  },
+  "lease-07-docx-MC-A-0302.docx": {
+    "unitId": "MC-A-0302",
+    "rules": {
+      "R1": "PASS",
+      "R2": "PASS",
+      "R3": "PASS",
+      "R4": "PASS",
+      "R5": "PASS",
+      "R6": "PASS",
+      "R7": "FAIL"
+    },
+    "flags": [
+      "Rent is annual (monthly derived: 11,000)"
+    ]
+  },
+  "lease-08-image-MC-A-0301.png": {
+    "unitId": "MC-A-0301",
+    "rules": {
+      "R1": "PASS",
+      "R2": "PASS",
+      "R3": "PASS",
+      "R4": "PASS",
+      "R5": "PASS",
+      "R6": "PASS",
+      "R7": "PASS"
+    },
+    "flags": [
+      "Text transcribed from image; quotes checked against the transcription"
+    ]
   }
 }

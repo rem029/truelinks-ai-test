@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { z } from 'zod';
-import { defineTool, runTool, toToolSpecs } from './toolRegistry.js';
+import { defineTool, runTool, toToolSpecs } from './toolRegistry.ts';
 
 describe('toolRegistry', () => {
   const sampleTool = defineTool({

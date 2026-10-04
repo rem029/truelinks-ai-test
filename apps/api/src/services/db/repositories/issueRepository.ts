@@ -3,7 +3,7 @@ import {
   Issue,
   WorkOrder,
 } from '@truelinks/shared';
-import type { Database, IssuesTable, WorkOrdersTable } from '../schema.js';
+import type { Database, IssuesTable, WorkOrdersTable } from '../schema.ts';
 
 export interface IssueRepository {
   createIssue(issue: Issue): Promise<Issue>;

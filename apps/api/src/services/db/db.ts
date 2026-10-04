@@ -2,7 +2,7 @@ import Database from 'better-sqlite3';
 import { Kysely, SqliteDialect } from 'kysely';
 import { dirname } from 'node:path';
 import { mkdirSync } from 'node:fs';
-import type { Database as DatabaseSchema } from './schema.js';
+import type { Database as DatabaseSchema } from './schema.ts';
 
 export function createDb(databaseUrl: string): Kysely<DatabaseSchema> {
   if (databaseUrl.startsWith('postgres://')) {

@@ -1,12 +1,12 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import type { Kysely } from 'kysely';
-import { createDb } from '../db/db.js';
-import { migrateToLatest } from '../db/migrations/migrate.js';
-import { seed } from '../db/seed.js';
-import { createRepositories, type Repositories } from '../db/repositories/index.js';
-import type { Database } from '../db/schema.js';
-import { evaluateLease } from './evaluateLease.js';
-import { sampleLeaseRecords } from './sampleLeaseRecords.js';
+import { createDb } from '../db/db.ts';
+import { migrateToLatest } from '../../migrations/migrate.ts';
+import { seed } from '../db/seed.ts';
+import { createRepositories, type Repositories } from '../db/repositories/index.ts';
+import type { Database } from '../db/schema.ts';
+import { evaluateLease } from './evaluateLease.ts';
+import { sampleLeaseRecords } from './sampleLeaseRecords.ts';
 
 describe('evaluateLease', () => {
   let db: Kysely<Database>;

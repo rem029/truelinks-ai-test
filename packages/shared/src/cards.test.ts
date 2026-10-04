@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { Card, ALLOWED_ACTIONS } from './cards.js';
+import { Card, ALLOWED_ACTIONS } from './cards.ts';
 
 describe('Card union and ALLOWED_ACTIONS', () => {
   it('exposes expected ALLOWED_ACTIONS for every card type', () => {

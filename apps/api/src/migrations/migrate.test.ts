@@ -1,8 +1,8 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import type { Kysely } from 'kysely';
-import { createDb } from '../db.js';
-import { migrateToLatest } from './migrate.js';
-import type { Database } from '../schema.js';
+import { createDb } from '../services/db/db.ts';
+import { migrateToLatest } from './migrate.ts';
+import type { Database } from '../services/db/schema.ts';
 
 describe('migrateToLatest', () => {
   let db: Kysely<Database>;

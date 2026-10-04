@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { z } from 'zod';
-import { sourcedField, Source } from './sourcedField.js';
+import { sourcedField, Source } from './sourcedField.ts';
 
 describe('sourcedField', () => {
   const StringField = sourcedField(z.string());

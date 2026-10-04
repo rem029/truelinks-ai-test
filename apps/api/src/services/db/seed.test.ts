@@ -1,9 +1,9 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import type { Kysely } from 'kysely';
-import { createDb } from './db.js';
-import { migrateToLatest } from './migrations/migrate.js';
-import { seed } from './seed.js';
-import type { Database } from './schema.js';
+import { createDb } from './db.ts';
+import { migrateToLatest } from '../../migrations/migrate.ts';
+import { seed } from './seed.ts';
+import type { Database } from './schema.ts';
 
 describe('seed', () => {
   let db: Kysely<Database>;

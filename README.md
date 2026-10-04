@@ -21,6 +21,8 @@ npm run db:seed           # optional: migrations + seed without starting the API
 
 The API creates `var/app.db` on first start, runs migrations and seeds the units and owner ruleset from `data/`. Seeding is safe to repeat: it only inserts what's missing, so it never resets a unit's occupancy. Delete `var/app.db` to start from scratch. `GET /api/units` lists the seeded units. `GET /api/health` reports which model provider is active (`stub` or `openrouter`).
 
+A lease review starts with `POST /api/conversations` (`{kind: "lease", unitId?}`; `unitId` is set when the upload starts from a unit page). `POST /api/conversations/:id/lease-document` takes the file (multipart field `file`, PDF or DOCX, up to 10 MB), splits it into clauses and returns them. `GET /api/conversations/:id` returns the conversation, its messages and documents, and `GET /api/documents/:id/file` serves the original file. Uploaded files are kept in `var/uploads/` (`UPLOAD_DIR`), named by document ID, never by the uploaded filename.
+
 The web app calls the API through Vite's `/api` proxy, so only port 3000 needs to be reachable. To open it through another hostname (e.g. a remote dev box), list it in `WEB_ALLOWED_HOSTS`.
 
 ## Repository layout
@@ -29,8 +31,9 @@ The web app calls the API through Vite's `/api` proxy, so only port 3000 needs t
 apps/api/src
   routes/       HTTP endpoints: parse and validate the request, call a service, send the response
   services/     Business logic (lease review, rules, unit matching, work orders)
-    db/         Kysely setup, migrations, repositories, seed
+    db/         Kysely setup, repositories, seed
     agents/     Lease and issue agents, their prompt files, model provider (OpenRouter + stub)
+  migrations/   Database migrations, numbered and run in order on start
   middleware/   Express middleware (request log, error handler)
   utils/        Small pure helper functions
 apps/web/src
@@ -49,7 +52,7 @@ Folders are created when their first file is needed. Routes stay thin: no busine
 ## Sample data
 
 - `data/owner_ruleset.json`, `data/units.json` — provided with the brief.
-- `data/sample-leases/` — generated test leases (PDF), each designed to exercise specific rules. Regenerate with `npm run samples:leases`.
+- `data/sample-leases/` — generated test leases (PDF, DOCX and an image), each designed to exercise specific rules or input formats. Regenerate with `npm run samples:leases` (output is byte-stable except the DOCX, which the `docx` library timestamps).
 
 | File | Unit | Exercises |
 |---|---|---|
@@ -58,6 +61,10 @@ Folders are created when their first file is needed. Routes stay thin: no busine
 | `lease-03-occupied-MC-B-1205.pdf` | MC-B-1205 (occupied) | R3 (48-month term), R7 (unit occupied) FAIL |
 | `lease-04-quarterly-no-deposit-MC-A-0301.pdf` | MC-A-0301 | Quarterly rent normalisation; no deposit → R1 NOT_DETERMINABLE |
 | `lease-05-unknown-unit-rent-conflict.pdf` | Tower C (not in records) | R7 FAIL; conflicting monthly rent (8,500 vs 8,000) must be flagged, not silently resolved |
+| `lease-06-long-MC-B-1204.pdf` | MC-B-1204 | 4 pages, 22 clauses; clauses 11 and 19 run across a page break; 36-month term (R3 boundary). All rules PASS |
+| `lease-07-docx-MC-A-0302.docx` | MC-A-0302 (occupied) | DOCX input (no page numbers); rent stated annually only; R7 FAIL |
+| `lease-08-image-MC-A-0301.png` | MC-A-0301 | Image input: the model transcribes it (`.txt` next to it is the transcript the stub returns). All rules PASS |
+| `lease-09-inline-headings.pdf` | MC-B-1204 | Headings inline with the text ("1. Term. The term…") and parties in prose: the rules find no headings, so the AI marks them. Not in `expected.json` (format test only) |
 
 `data/sample-leases/expected.json` holds the expected rule outcomes and flags per lease, before the owner has reviewed anything (for example, lease 02's R7 is NOT_DETERMINABLE until the owner confirms the unit). `unitId` is the correct unit. Used by tests and the stub model provider.
 
@@ -92,8 +99,9 @@ Folders are created when their first file is needed. Routes stay thin: no busine
 - **The model extracts and code decides.** Rules R1–R7, date calculations, unit matching and quote checks are plain TypeScript with unit tests. Rules are loaded from `data/owner_ruleset.json`, and every lease review records the ruleset version it was checked against.
 - **Tool calling where the agent has to decide; fixed steps elsewhere.** The first extraction is a single structured-output call. In the review loop and the issue flow, the agent chooses among tools: `search_clauses`, `update_field`, `find_unit`, `evaluate_rules`, `get_unit_lease`, `draft_work_order`, `ask_user`. There is no tool for confirming, saving or changing occupancy; only the user's button does that. Tool arguments are schema-checked, each turn is capped at about 6 steps, and every call is logged.
 - **No second "judge" AI.** Code checks and human review already cover verification more reliably, at no extra cost or delay. The useful cross-checking (for example, who pays for a repair) happens through `get_unit_lease`.
-- **PDF and DOCX leases now; images later.** Both are converted to text and split into clauses. Images and scanned PDFs would be transcribed by the vision model and flagged as "transcribed from image", because their citations could only be checked against the model's own transcription (roadmap).
+- **PDF, DOCX and images.** PDF and DOCX are read as text. A PNG or JPEG photo of a lease is transcribed by the vision model, then split like any other text, and the document is marked `textSource: image`: its quotes can only be checked against the model's own transcription, so the owner is told so. Scanned PDFs (pages with no text layer) are still rejected with a clear message; rendering their pages to images for the same path is on the roadmap.
 - **Occupancy changes only when the user confirms.** If a high-severity rule fails, confirming needs an override reason.
+- **Code splits the lease into clauses; the model doesn't.** PDFs are read page by page with `unpdf` and DOCX files with `mammoth`. Headings are found by simple rules: a numbered line (`1. Term`) counts only if it is the next number in sequence, so a wrapped line such as "1 November 2026" isn't mistaken for a clause; a short all-caps line (`PARTIES`, `PREMISES`, `SIGNATURES`) is a section; text before the first heading is the `preamble`. When the rules find no numbered heading (for example headings written inline, "1. Term. The term is…"), the model is asked which lines are headings. It only returns line numbers and IDs; code checks them (lines exist, in order, IDs unique) and cuts the text itself, so every clause is still the document's own words and quotes stay checkable. If the model finds nothing, fails or isn't available (stub), the document falls back to one clause per paragraph (`p1`, `p2`, …). Every document records how it was split (`clauseSplit`: `headings`, `ai` or `paragraphs`) so the owner is asked to check an AI or paragraph split. Each clause stores its ID, heading, text and the pages it starts and ends on, so a citation can open the original PDF at the right page. DOCX has no reliable page numbers, so its clauses have none. Clause IDs are what every extracted field cites, and a quote is checked against the text of the clause it names. All the sample leases (PDF, multi-page PDF, DOCX, image) split into the expected clauses, and every quote in the test fixtures is found in the clause it cites, including against a real model's transcription of the image lease.
 - **No fixed lease template.** The agent reads whatever lease is uploaded. Leases come from many sources (old leases, broker drafts, other templates), so the AI does the reading and a person corrects it. Every extracted field can be accepted, rejected or edited, and the rules run again on the corrected values.
 - **SQLite now, with the database kept swappable.** SQLite needs no server: `npm install` and it runs, which matters for reviewers starting the project. To keep the database replaceable:
   - The app's logic talks to *repository interfaces* (`UnitRepository`, `LeaseRepository`, …), never to a database driver.
@@ -102,8 +110,9 @@ Folders are created when their first file is needed. Routes stay thin: no busine
   - Migrations are TypeScript objects registered in one list (no file scanning), so they run the same under `tsx`, Vitest and a build.
   - A `postgres://` URL currently stops with a clear "not wired yet" error rather than adding a Postgres driver nobody uses yet.
   - **Trade-off:** SQLite allows only one writer at a time, so it's the first thing to replace when there are many users. That's the first item under "Where it breaks first at scale".
-- **Few dependencies, all actively maintained and widely used.** Every package must have a recent release, strong weekly downloads and TypeScript types. For example, PDFs are read with `unpdf` (built on Mozilla's pdf.js, released in the last few months), not the better-known `pdf-parse`, whose last release is almost a year old.
+- **Few dependencies, all actively maintained and widely used.** Every package must have a recent release, strong weekly downloads and TypeScript types. For example, PDFs are read with `unpdf` (built on Mozilla's pdf.js, released in the last few months), not the better-known `pdf-parse`, whose last release is almost a year old. Sample leases are generated with dev-only tools: `pdfkit` (PDF), `docx` (DOCX), and `@napi-rs/canvas` with the `geist` font to render the image lease. The machine has no system fonts and PDF's built-in Helvetica isn't embedded, so without a real font file the image comes out blank. None of these ship with the app.
 - **The browser talks to the API through the Vite dev proxy.** The web app calls `/api/...` on its own origin and Vite forwards it to the API. That means no CORS setup and no API URL to configure, and it behaves the same on localhost and behind a remote proxy. In production the same path would be routed by the reverse proxy.
+- **Imports name the real file.** Relative imports use `.ts` (`./rules.ts`), not the `.js` that Node's ESM convention asks for when TypeScript compiles to JavaScript. Nothing here is compiled: `tsx` runs the API, Vite builds the web app and `tsc` only typechecks, so `.ts` points at the file that actually exists and also works with Node's built-in TypeScript support.
 - **Standard library over small packages.** `.env` is loaded with Node's built-in `process.loadEnvFile` (no `dotenv`) and validated with Zod at startup, so a bad value fails loudly. The shared package is consumed as TypeScript source (no build step) by `tsx` in the API and Vite in the web app.
 - **Zustand for global UI state, only where it's needed.** We have used it before; it's small, hook-based and needs no provider or boilerplate. Local component state stays in `useState`, and server data comes from the API client. A store is added only for state shared across screens (e.g. the open conversation).
 - **Cheap model by default.** `OPENROUTER_MODEL` defaults to `xiaomi/mimo-v2.6-pro` (`z-ai/glm-5.3-flash` is cheaper still). Both take images, call tools and return JSON, which both agents need, at a small fraction of a frontier model's price. Swapping models is a config change.
@@ -131,6 +140,7 @@ Splitting writing from reviewing means no agent signs off its own work.
 ## Where it breaks first at scale
 
 1. **SQLite allows one writer at a time.** Many owners reviewing and many tenants reporting at once would queue on writes. Fix: switch the Kysely dialect to Postgres.
+2. **Uploaded files live on the API server's disk.** That breaks with more than one API instance and has no backup. Fix: object storage (S3 or similar), keeping the same document ID as the key.
 
 ## Roadmap: toward a property management system
 

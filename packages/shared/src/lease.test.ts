@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { LeaseRecord } from './lease.js';
+import { LeaseRecord } from './lease.ts';
 
 describe('LeaseRecord schema', () => {
   it('parses a complete valid lease record', () => {

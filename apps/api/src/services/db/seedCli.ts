@@ -1,7 +1,7 @@
-import { env } from '../../env.js';
-import { createDb } from './db.js';
-import { migrateToLatest } from './migrations/migrate.js';
-import { seed } from './seed.js';
+import { env } from '../../env.ts';
+import { createDb } from './db.ts';
+import { migrateToLatest } from '../../migrations/migrate.ts';
+import { seed } from './seed.ts';
 
 const db = createDb(env.DATABASE_URL);
 try {

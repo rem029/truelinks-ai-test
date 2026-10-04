@@ -2,10 +2,10 @@ import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import type { Ruleset } from '@truelinks/shared';
-import { loadRuleset, loadUnits } from '../db/seed.js';
-import { matchUnit } from './unitMatch.js';
-import { evaluateRules } from './rules.js';
-import { sampleLeaseRecords } from './sampleLeaseRecords.js';
+import { loadRuleset, loadUnits } from '../db/seed.ts';
+import { matchUnit } from './unitMatch.ts';
+import { evaluateRules } from './rules.ts';
+import { sampleLeaseRecords } from './sampleLeaseRecords.ts';
 
 const ruleset = loadRuleset();
 const allUnits = loadUnits();
@@ -96,5 +96,14 @@ describe('evaluateRules against ground truth expected.json', () => {
       severity: 'low',
       rulesetVersion: '1.0',
     });
+  });
+
+  it('evaluates R6 for annual-only rent with specific reason', () => {
+    const record = sampleLeaseRecords['lease-07-docx-MC-A-0302.docx']!;
+    const unitMatch = matchUnit(record, allUnits);
+    const results = evaluateRules({ record, unitMatch, ruleset });
+    const r6 = results.find((r) => r.ruleId === 'R6');
+    expect(r6?.status).toBe('PASS');
+    expect(r6?.reason).toBe('Rent is stated annually (QAR 132,000); no monthly figure to reconcile');
   });
 });

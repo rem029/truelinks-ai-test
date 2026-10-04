@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { askUserTool } from './askUserTool.js';
+import { askUserTool } from './askUserTool.ts';
 
 describe('askUserTool', () => {
   it('runs successfully with a valid question', async () => {

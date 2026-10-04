@@ -1,10 +1,10 @@
 import { describe, it, expect, vi } from 'vitest';
 import { z } from 'zod';
-import { runAgentTurn } from './agentLoop.js';
-import { createStubProvider } from './modelProvider/stubProvider.js';
-import { defineTool } from './toolRegistry.js';
-import { askUserTool } from './askUserTool.js';
-import type { ModelProvider } from './modelProvider/types.js';
+import { runAgentTurn } from './agentLoop.ts';
+import { createStubProvider } from './modelProvider/stubProvider.ts';
+import { defineTool } from './toolRegistry.ts';
+import { askUserTool } from './askUserTool.ts';
+import type { ModelProvider } from './modelProvider/types.ts';
 
 describe('agentLoop', () => {
   it('runs lease correction with stub provider and update_field tool', async () => {

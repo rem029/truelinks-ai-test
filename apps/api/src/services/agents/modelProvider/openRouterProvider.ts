@@ -8,7 +8,7 @@ import type {
   ModelProvider,
   ToolCall,
   ToolSpec,
-} from './types.js';
+} from './types.ts';
 
 export interface OpenAIClientLike {
   chat: {

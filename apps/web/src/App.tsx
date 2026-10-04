@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { getHealth } from './utils/api.js';
+import { getHealth } from './utils/api.ts';
 
 type HealthStatus =
   | { state: 'loading' }

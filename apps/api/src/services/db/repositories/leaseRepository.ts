@@ -1,6 +1,6 @@
 import type { Kysely } from 'kysely';
 import { Lease } from '@truelinks/shared';
-import type { Database, LeasesTable } from '../schema.js';
+import type { Database, LeasesTable } from '../schema.ts';
 
 export interface LeaseRepository {
   create(lease: Lease): Promise<Lease>;
