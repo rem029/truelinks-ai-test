@@ -4,7 +4,7 @@ Goal: upload lease in chat → sourced record, flags, rule results, unit match �
 
 ## Phase 1 — Ingest
 ### Tasks
-- [ ] Upload in conversation: PDF (pdf-parse), DOCX (mammoth) → text → numbered clauses
+- [ ] Upload in conversation: PDF (unpdf), DOCX (mammoth) → text → numbered clauses
 - [ ] Image / scanned PDF → vision transcription into clauses + "transcribed from image" flag
 - [ ] Optional unit context (upload started from a unit page)
 - [x] Sample leases in `data/sample-leases/`

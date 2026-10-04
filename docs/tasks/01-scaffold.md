@@ -13,7 +13,7 @@ Goal: `npm install && npm run dev` starts API + web, web calls API.
 ### Tasks
 - [ ] `apps/api`: Express 5 on `0.0.0.0:8083`, CORS for web origin, `/api/health`, dotenv, error handler
 - [ ] `apps/web`: Vite + React + TS on port 3000, `allowedHosts`, `VITE_API_URL`
-- [ ] Verify via https://frontend.app.rem029.com:3000 and https://account.app.rem029.com:8083/api/health
+- [ ] Hosts/origins from `.env`; verify web + `/api/health` on the dev URLs in `docs/dev-env.md`
 - [ ] `packages/shared`: exported from source, used by both
 ### Results
 -

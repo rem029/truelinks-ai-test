@@ -64,6 +64,7 @@ scripts/          Dev utilities (sample data generation)
   - The repositories use [Kysely](https://kysely.dev), a typed SQL query builder that supports SQLite, Postgres and MySQL. Switching databases means changing the dialect in one file and setting `DATABASE_URL`, not rewriting queries.
   - Migrations stick to portable SQL types. Structured records (a lease's extracted fields, chat cards) go in JSON columns: `TEXT` in SQLite, `jsonb` in Postgres.
   - **Trade-off:** SQLite allows only one writer at a time, so it's the first thing to replace when there are many users. That's the first item under "Where it breaks first at scale".
+- **Few dependencies, all actively maintained and widely used.** Every package must have a recent release, strong weekly downloads and TypeScript types. For example, PDFs are read with `unpdf` (built on Mozilla's pdf.js, released in the last few months), not the better-known `pdf-parse`, whose last release is almost a year old.
 - **Term length counts the expiry date as inclusive.** A lease from 1 Nov 2026 to 31 Oct 2028 is 24 months. Rule R4 uses this convention.
 
 ## Where it breaks first at scale
