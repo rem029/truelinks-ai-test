@@ -1,11 +1,11 @@
-# 04 — Lease agent (Part A)
+# 04 — Lease agent (Part A) · Must
 
 Goal: upload lease in chat → sourced record, flags, rule results, unit match → review loop → confirm → committed to unit.
 
 ## Phase 1 — Ingest
 ### Tasks
-- [ ] Upload in conversation: PDF (unpdf), DOCX (mammoth) → text → numbered clauses
-- [ ] Image / scanned PDF → vision transcription into clauses + "transcribed from image" flag
+- [ ] Upload in conversation: PDF (unpdf), DOCX (mammoth, if quick) → text → numbered clauses
+- [ ] (Stretch #3) Image / scanned PDF → vision transcription into clauses + "transcribed from image" flag
 - [ ] Optional unit context (upload started from a unit page)
 - [x] Sample leases in `data/sample-leases/`
 ### Results
@@ -23,7 +23,7 @@ Goal: upload lease in chat → sourced record, flags, rule results, unit match �
 ## Phase 3 — Flags, rules, unit
 ### Tasks
 - [ ] Deterministic flags: missing fields, contradictions (term vs dates, annual vs monthly), odd values
-- [ ] Rule engine R1–R7, parameterised from DB ruleset + unit tests against `expected.json`; store ruleset version on result
+- [ ] Rule engine R1–R7, ruleset loaded from DB (seeded) + unit tests against `expected.json`; store ruleset version on result
 - [ ] Unit match by id/label/parking bay; none/ambiguous → `unitMatch` card; mismatch with page unit → flag
 ### Results
 -

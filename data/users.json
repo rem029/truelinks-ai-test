@@ -1,0 +1,7 @@
+{
+  "_note": "TEST ACCOUNTS ONLY. Plain-text passwords on purpose to keep the exercise simple — see README 'Login is a test shortcut'. Never do this in production.",
+  "users": [
+    { "id": "u-owner", "username": "owner", "password": "owner123", "name": "Marina Crest Owner", "role": "owner" },
+    { "id": "u-inspector", "username": "inspector", "password": "inspector123", "name": "Site Inspector", "role": "inspector" }
+  ]
+}

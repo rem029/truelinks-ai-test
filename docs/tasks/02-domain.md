@@ -10,6 +10,7 @@ Goal: one set of Zod schemas shared by API, agent output, and UI; persisted.
 - [ ] `Issue` (photos, condition, equipment[]), `WorkOrder` (title, description, unitId, severity, status)
 - [ ] `Conversation` (kind: lease | issue, unitId?, status: open | confirmed | abandoned), `Message` (role, text, cards[], attachments[])
 - [ ] `Card` union: `field`, `rule`, `flag`, `unitMatch`, `workOrder`, `summary` — each with its allowed actions
+- [ ] (Stretch) `User` (id, name, role: owner | inspector), `ReportLink` (unitId, token, revokedAt?), `Notification` (userId, issueId, summary, readAt?)
 - [ ] `Action` union: accept / reject / edit(value) / choose(option) / confirm
 ### Results
 -
@@ -18,7 +19,7 @@ Goal: one set of Zod schemas shared by API, agent output, and UI; persisted.
 ### Tasks
 - [ ] Kysely + better-sqlite3; dialect chosen from `DATABASE_URL` (`file:` → SQLite, `postgres://` → Postgres stub/note)
 - [ ] Repository interfaces in API (`UnitRepository`, `LeaseRepository`, `ConversationRepository`, `IssueRepository`); services depend only on these
-- [ ] Migrations (portable types): units, rulesets, conversations, messages, leases, issues, work_orders (JSON columns for records/cards)
+- [ ] Migrations (portable types): units, rulesets, conversations, messages, leases, issues, work_orders (JSON columns for records/cards); stretch adds users, report_links, notifications
 - [ ] Idempotent seed: units from `data/units.json`, ruleset from `data/owner_ruleset.json`
 ### Results
 -

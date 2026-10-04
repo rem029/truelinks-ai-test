@@ -1,4 +1,4 @@
-# 08 — Settings (cut if short on time)
+# 08 — Settings · Stretch 4
 
 Goal: owner manages units and rules in the UI; seeded from `data/` on first run.
 

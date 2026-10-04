@@ -1,47 +1,54 @@
 # 00 — Plan
 
-Received 2026-10-04 · due 2026-10-08 (4 days).
+Received 2026-10-04 (planning day) · build 2026-10-05 → 2026-10-07 · polish + submit 2026-10-08.
 
-## Users
-- **Owner / owner's team** — uploads leases, reviews everything, confirms. Primary user.
-- **Tenant / inspector** — reports issues with photos (role picked on form; no auth in MVP).
+**Rule: build the brief's minimum requirements first. Nothing from Stretch starts until every Must item works end-to-end with the stub provider.**
+Long-term vision: a property management system (tickets, roles, notifications). That's the README roadmap, not this build.
 
-## Flows (separate in time, joined by the unit)
-- **A. Lease (at signing):** upload (PDF/DOCX/image) → clauses → extract w/ citations → code checks (quotes, unit match, R1–R7, contradictions) → cards for what needs attention → review loop → owner confirms → active lease, unit `occupied`.
-- **B. Issue (during tenancy):** photos + note for a unit → vision assessment (condition, damage, equipment) → agent reads unit's lease (responsibility) → draft work order → review loop → owner confirms.
-- **Unit page:** active lease (sources, review state, rule results) + open issues/work orders + links to conversations.
-- **Settings:** units + ruleset seeded from `data/`, editable (unit status; rule threshold/severity/enabled), versioned.
+## Must — brief requirements (deliver in 4 days)
+**Part A — Lease record** (owner)
+- Upload lease (PDF; DOCX if quick) → clauses → AI extracts parties, unit, dates, rent (amount + frequency), deposit, escalation, renewal, termination — each with clause + quote
+- Code: quote verification, flags (missing / contradictions / odd values), rules R1–R7 (PASS / FAIL / NOT_DETERMINABLE + reason + clause), unit match
+- Human accepts / rejects / edits each field and flag; typed corrections via a small tool loop
+- Confirm → lease linked to unit, unit occupancy updated (high-severity FAIL needs override reason)
 
-## Key decisions
-- **Chat is the workflow, unit page is the record.** Agent replies with interactive cards; confirm commits to the unit.
-- **Review loop:** click (accept/reject/edit/choose) or type a correction → agent patches only affected fields → rules re-run → reports what changed + what's open → until confirm.
-- **Corrections patch, never re-extract.** Accepted fields locked. Typed corrections cited as `source: user` + message id.
-- **Model extracts, code decides.** R1–R7, date math, unit match, quote verification are deterministic TS (unit-tested). Rules are parameterised (logic in code; threshold/severity/enabled in DB).
-- **Tool calling in the review loop and Part B**; structured output for first extraction. Tools: `search_clauses`, `update_field`, `find_unit`, `evaluate_rules`, `get_unit_lease`, `draft_work_order`, `ask_user`. No tool for confirm/commit/occupancy — user button only. Max ~6 steps/turn, Zod-validated args, every call logged.
-- **No judge/second AI** — code checks + human review cover verification; cross-feature reasoning via `get_unit_lease`.
-- **Lease input:** PDF (text) and DOCX → text → clauses; image / scanned PDF → vision transcription → clauses + "transcribed from image" flag.
-- **Traceability verified:** each field cites `clauseId` + verbatim `quote`; server checks it → unverified = flag.
-- **Review state on every AI output:** `pending | accepted | rejected | edited`.
-- **Occupancy only on confirm**, high-severity FAIL needs override reason.
-- **Ruleset versioned**; each lease review stores the version it was checked against.
-- **Storage:** SQLite via Kysely behind repository interfaces → Postgres = dialect + `DATABASE_URL`. DB in `var/`.
-- **Provider:** OpenRouter (OpenAI SDK, tool calling + vision) and Stub (scripted from `expected.json` files).
-- **UI:** Claude Code-inspired (see CLAUDE.md), built with `/impeccable`.
+**Part B — Issue report**
+- Upload 1..n photos for a unit (+ note, reporter role: tenant/inspector as a field)
+- AI: condition (new / worn / damaged / undeterminable), damages, equipment; reads unit's lease for responsibility; drafts work order (title, what's wrong, unit, severity)
+- Human accepts / rejects / edits the work order; unclear photo → asks for another; no issue → no draft
 
-## Tasks
-1. `01-scaffold` — workspace, Express API, Vite web, shared package
-2. `02-domain` — schemas + storage + seed
-3. `03-model-provider` — provider, tools runtime, OpenRouter + stub
-4. `04-lease-agent` — Part A + review loop
-5. `05-issue-agent` — Part B
-6. `06-ui` — chat with cards, unit page
-7. `07-readme` — README, submission
-8. `08-settings` — units + rules management (cut if short on time)
+**Together**
+- Units list + unit page: lease (sources, review state, rule results) + issues and work orders in one place
+
+**Engineering**
+- Stub provider (runs with no key) + OpenRouter provider; unit tests for rules, dates, matching, quote checks
+- README: how to run, decisions, left out, where it breaks at scale, product ideas, API requirements
+
+## Stretch — only if Must is done (in this order; numbers = README roadmap)
+1. Test login + roles (roadmap 1 · `09` phase 1) — `data/users.json` already exists
+2. Public QR report page per unit sharing one `ReportForm` (roadmap 2 · `09` phase 2)
+3. In-app notifications (roadmap 4 · `09` phase 3)
+4. Settings: units + rule thresholds, ruleset versioning (roadmap 5 · `08`)
+5. Image / scanned-PDF leases (roadmap 6)
+
+## Later — README roadmap only (not built)
+All ideas are kept and ranked in README → "Roadmap: toward a property management system" (12 items: tickets, notifications by email/WhatsApp, move-in inspection, corrections as training signal, SLAs/contractors/analytics, template fast path, in-product lease generation, natural-language rules, …). Add new ideas there, not here.
+
+## Schedule
+| Day | Date | Goal | Tasks |
+|---|---|---|---|
+| 0 | Oct 4 | Plan, sample data | done |
+| 1 | Oct 5 | Foundations: runs end-to-end, rules tested | `01` scaffold · `02` schemas + SQLite + seed · `03` provider (stub + OpenRouter) · rule engine + tests (`04` phase 3) |
+| 2 | Oct 6 | Part A complete | `04` ingest → extract → verify → review loop → confirm · lease review UI (`06` phase 1) |
+| 3 | Oct 7 | Part B + unit page | `05` · units list + unit page (`06` phase 2) · test with a real OpenRouter key |
+| 4 | Oct 8 | Polish + submit | `/impeccable` pass · README final · fresh-clone run check · stretch only if time · send email |
+
+## Key decisions (summary — details in README)
+- Model extracts, code decides, human confirms. No tool can confirm or change occupancy.
+- Chat-style review with cards; corrections patch only affected fields; accepted fields locked.
+- Tool calling only where the agent decides (corrections, issue review); first extraction is one structured call.
+- SQLite via Kysely behind repository interfaces; swappable DB.
+- Few, well-maintained dependencies.
 
 ## Open questions
-- `PRODUCT.md` from `/impeccable init`: commit at root (recommended) or gitignore.
-
-## Product ideas (running log → README)
-- Owner template fast path; generate leases in-product; corrections as training signal.
-- Move-in inspection baseline → compare at move-out for deposit deductions.
-- Natural-language rules → AI proposes structured rule → owner approves → new ruleset version.
+- `PRODUCT.md` from `/impeccable init`: commit at root (recommended).
