@@ -1,0 +1,9 @@
+node_modules/
+dist/
+.env
+*.db
+
+# Private working notes (symlinked into root)
+/docs
+/CLAUDE.md
+/.claude

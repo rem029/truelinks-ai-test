@@ -1,0 +1,5 @@
+{
+  "name": "truelinks-lease-agent",
+  "private": true,
+  "workspaces": ["apps/*", "packages/*"]
+}
