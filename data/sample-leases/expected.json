@@ -1,0 +1,82 @@
+{
+  "lease-01-clean-MC-B-1204.pdf": {
+    "unitId": "MC-B-1204",
+    "rules": {
+      "R1": "PASS",
+      "R2": "PASS",
+      "R3": "PASS",
+      "R4": "PASS",
+      "R5": "PASS",
+      "R6": "PASS",
+      "R7": "PASS"
+    },
+    "flags": []
+  },
+  "lease-02-problems-MC-B-0902.pdf": {
+    "unitId": "MC-B-0902",
+    "rules": {
+      "R1": "FAIL",
+      "R2": "FAIL",
+      "R3": "PASS",
+      "R4": "FAIL",
+      "R5": "FAIL",
+      "R6": "FAIL",
+      "R7": "PASS"
+    },
+    "flags": [
+      "Unit ID not stated; matched by label + parking bay",
+      "Stated term (12 months) contradicts dates (18 months)",
+      "Annual rent 72,000 != 6,200 x 12 (74,400)",
+      "Tenant signature missing",
+      "Renewal terms vague"
+    ]
+  },
+  "lease-03-occupied-MC-B-1205.pdf": {
+    "unitId": "MC-B-1205",
+    "rules": {
+      "R1": "PASS",
+      "R2": "PASS",
+      "R3": "FAIL",
+      "R4": "PASS",
+      "R5": "PASS",
+      "R6": "PASS",
+      "R7": "FAIL"
+    },
+    "flags": [
+      "Unit is currently occupied",
+      "Term 48 months exceeds 36 without owner approval"
+    ]
+  },
+  "lease-04-quarterly-no-deposit-MC-A-0301.pdf": {
+    "unitId": "MC-A-0301",
+    "rules": {
+      "R1": "NOT_DETERMINABLE",
+      "R2": "PASS",
+      "R3": "PASS",
+      "R4": "PASS",
+      "R5": "PASS",
+      "R6": "PASS",
+      "R7": "PASS"
+    },
+    "flags": [
+      "Security deposit not stated",
+      "Rent is quarterly (monthly derived: 13,000)"
+    ]
+  },
+  "lease-05-unknown-unit-rent-conflict.pdf": {
+    "unitId": null,
+    "rules": {
+      "R1": "PASS",
+      "R2": "PASS",
+      "R3": "PASS",
+      "R4": "PASS",
+      "R5": "PASS",
+      "R6": "PASS",
+      "R7": "FAIL"
+    },
+    "flags": [
+      "Unit 'Apartment 1501, Tower C' not in owner records",
+      "Monthly rent conflict: clause 2 says 8,500, clause 5 says 8,000"
+    ]
+  }
+}
