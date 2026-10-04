@@ -16,7 +16,10 @@ npm install
 npm run dev               # API on :8083, web on :3000 → open http://localhost:3000
 npm test                  # unit tests
 npm run typecheck
+npm run db:seed           # optional: migrations + seed without starting the API
 ```
+
+The API creates `var/app.db` on first start, runs migrations and seeds the units and owner ruleset from `data/`. Seeding is safe to repeat: it only inserts what's missing, so it never resets a unit's occupancy. Delete `var/app.db` to start from scratch. `GET /api/units` lists the seeded units.
 
 The web app calls the API through Vite's `/api` proxy, so only port 3000 needs to be reachable. To open it through another hostname (e.g. a remote dev box), list it in `WEB_ALLOWED_HOSTS`.
 
@@ -95,13 +98,16 @@ Folders are created when their first file is needed. Routes stay thin: no busine
 - **SQLite now, with the database kept swappable.** SQLite needs no server: `npm install` and it runs, which matters for reviewers starting the project. To keep the database replaceable:
   - The app's logic talks to *repository interfaces* (`UnitRepository`, `LeaseRepository`, …), never to a database driver.
   - The repositories use [Kysely](https://kysely.dev), a typed SQL query builder that supports SQLite, Postgres and MySQL. Switching databases means changing the dialect in one file and setting `DATABASE_URL`, not rewriting queries.
-  - Migrations stick to portable SQL types. Structured records (a lease's extracted fields, chat cards) go in JSON columns: `TEXT` in SQLite, `jsonb` in Postgres.
+  - Migrations stick to portable SQL types. Structured records (a lease's extracted fields, chat cards) go in JSON columns: `TEXT` in SQLite, `jsonb` in Postgres. Every JSON column is parsed with the shared Zod schema when it's read, so a bad row fails loudly instead of reaching the UI.
+  - Migrations are TypeScript objects registered in one list (no file scanning), so they run the same under `tsx`, Vitest and a build.
+  - A `postgres://` URL currently stops with a clear "not wired yet" error rather than adding a Postgres driver nobody uses yet.
   - **Trade-off:** SQLite allows only one writer at a time, so it's the first thing to replace when there are many users. That's the first item under "Where it breaks first at scale".
 - **Few dependencies, all actively maintained and widely used.** Every package must have a recent release, strong weekly downloads and TypeScript types. For example, PDFs are read with `unpdf` (built on Mozilla's pdf.js, released in the last few months), not the better-known `pdf-parse`, whose last release is almost a year old.
 - **The browser talks to the API through the Vite dev proxy.** The web app calls `/api/...` on its own origin and Vite forwards it to the API. That means no CORS setup and no API URL to configure, and it behaves the same on localhost and behind a remote proxy. In production the same path would be routed by the reverse proxy.
 - **Standard library over small packages.** `.env` is loaded with Node's built-in `process.loadEnvFile` (no `dotenv`) and validated with Zod at startup, so a bad value fails loudly. The shared package is consumed as TypeScript source (no build step) by `tsx` in the API and Vite in the web app.
 - **Zustand for global UI state, only where it's needed.** We have used it before; it's small, hook-based and needs no provider or boilerplate. Local component state stays in `useState`, and server data comes from the API client. A store is added only for state shared across screens (e.g. the open conversation).
 - **Cheap model by default.** `OPENROUTER_MODEL` defaults to `xiaomi/mimo-v2.6-pro` (`z-ai/glm-5.3-flash` is cheaper still). Both take images, call tools and return JSON, which both agents need, at a small fraction of a frontier model's price. Swapping models is a config change.
+- **One set of schemas for API, agent and UI.** `packages/shared` defines every domain type with Zod (lease record, sourced field, flag, rule result, issue, work order, conversation, message, card, action). Each extracted field carries its value, its source (a clause and quote, or the user message that changed it), a confidence and a review state. A card's allowed actions come from one map (`ALLOWED_ACTIONS`), so the UI and the API can't disagree about what a card supports.
 - **Term length counts the expiry date as inclusive.** A lease from 1 Nov 2026 to 31 Oct 2028 is 24 months. Rule R4 uses this convention.
 
 ## How this was built

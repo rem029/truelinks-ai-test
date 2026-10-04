@@ -2,8 +2,14 @@ import express, { Router } from 'express';
 import { requestLog } from './middleware/requestLog.js';
 import { errorHandler } from './middleware/errorHandler.js';
 import { healthRouter } from './routes/health.js';
+import { createUnitsRouter } from './routes/units.js';
+import type { Repositories } from './services/db/repositories/index.js';
 
-export function createApp() {
+export interface AppDependencies {
+  repositories: Repositories;
+}
+
+export function createApp(deps: AppDependencies) {
   const app = express();
 
   app.use(express.json());
@@ -11,6 +17,7 @@ export function createApp() {
 
   const apiRouter = Router();
   apiRouter.use(healthRouter);
+  apiRouter.use(createUnitsRouter(deps.repositories.units));
 
   app.use('/api', apiRouter);
 

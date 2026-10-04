@@ -9,7 +9,8 @@
     "dev": "concurrently -n api,web \"npm run dev -w @truelinks/api\" \"npm run dev -w @truelinks/web\"",
     "test": "vitest run",
     "typecheck": "npm run typecheck --workspaces --if-present",
-    "samples:leases": "node scripts/generate-sample-leases.mjs"
+    "samples:leases": "node scripts/generate-sample-leases.mjs",
+    "db:seed": "tsx apps/api/src/services/db/seedCli.ts"
   },
   "devDependencies": {
     "@types/node": "^26.6.4",

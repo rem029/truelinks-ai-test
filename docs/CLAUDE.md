@@ -9,6 +9,7 @@ Brief: `docs/attachments/Solution-brief-explained.docx` (summary in `docs/email.
 - `npm test` — unit tests (Vitest)
 - `npm run typecheck` — `tsc --noEmit` across workspaces
 - `npm run samples:leases` — regenerate sample lease PDFs
+- `npm run db:seed` — migrations + idempotent seed against `DATABASE_URL` (the API also does this on start)
 (Keep this list in sync with `package.json` scripts.)
 
 ## Stack
