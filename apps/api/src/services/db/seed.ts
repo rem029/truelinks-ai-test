@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { z } from 'zod';
 import type { Kysely } from 'kysely';
-import { Rule, UnitStatus } from '@truelinks/shared';
+import { Rule, Ruleset, Unit, UnitStatus } from '@truelinks/shared';
 import { REPO_ROOT } from '../../env.js';
 import type { Database, UnitsTable } from './schema.js';
 
@@ -37,40 +37,68 @@ const rawRulesetFileSchema = z.object({
   rules: z.array(Rule),
 });
 
+export function loadUnits(): Unit[] {
+  const unitsPath = resolve(REPO_ROOT, 'data/units.json');
+  const unitsContent = JSON.parse(readFileSync(unitsPath, 'utf-8'));
+  const parsedUnitsFile = rawUnitsFileSchema.parse(unitsContent);
+
+  const units: Unit[] = [];
+  for (const property of parsedUnitsFile.properties) {
+    for (const building of property.buildings) {
+      for (const unit of building.units) {
+        units.push(
+          Unit.parse({
+            unitId: unit.unit_id,
+            label: unit.label,
+            type: unit.type,
+            areaSqm: unit.area_sqm,
+            parkingBay: unit.parking_bay,
+            status: unit.status,
+            buildingId: building.building_id,
+            buildingName: building.name,
+            propertyId: property.property_id,
+            propertyName: property.name,
+          })
+        );
+      }
+    }
+  }
+  return units;
+}
+
+export function loadRuleset(): Ruleset {
+  const rulesetPath = resolve(REPO_ROOT, 'data/owner_ruleset.json');
+  const rulesetContent = JSON.parse(readFileSync(rulesetPath, 'utf-8'));
+  const parsedRulesetFile = rawRulesetFileSchema.parse(rulesetContent);
+
+  return Ruleset.parse({
+    name: parsedRulesetFile.ruleset_name,
+    version: parsedRulesetFile.version,
+    rules: parsedRulesetFile.rules,
+  });
+}
+
 export interface SeedResult {
   unitsInserted: number;
   rulesetInserted: number;
 }
 
 export async function seed(db: Kysely<Database>): Promise<SeedResult> {
-  const unitsPath = resolve(REPO_ROOT, 'data/units.json');
-  const rulesetPath = resolve(REPO_ROOT, 'data/owner_ruleset.json');
+  const domainUnits = loadUnits();
+  const domainRuleset = loadRuleset();
 
-  const unitsContent = JSON.parse(readFileSync(unitsPath, 'utf-8'));
-  const rulesetContent = JSON.parse(readFileSync(rulesetPath, 'utf-8'));
-
-  const parsedUnitsFile = rawUnitsFileSchema.parse(unitsContent);
-  const parsedRulesetFile = rawRulesetFileSchema.parse(rulesetContent);
-
-  const flattenedUnits: UnitsTable[] = [];
-  for (const property of parsedUnitsFile.properties) {
-    for (const building of property.buildings) {
-      for (const unit of building.units) {
-        flattenedUnits.push({
-          unit_id: unit.unit_id,
-          label: unit.label,
-          type: unit.type,
-          area_sqm: unit.area_sqm,
-          parking_bay: unit.parking_bay,
-          status: unit.status,
-          building_id: building.building_id,
-          building_name: building.name,
-          property_id: property.property_id,
-          property_name: property.name,
-        });
-      }
-    }
-  }
+  const flattenedUnits: UnitsTable[] = domainUnits.map((unit) => ({
+    unit_id: unit.unitId,
+    label: unit.label,
+    type: unit.type,
+    area_sqm: unit.areaSqm,
+    parking_bay: unit.parkingBay,
+    status: unit.status,
+    building_id: unit.buildingId,
+    building_name: unit.buildingName,
+    property_id: unit.propertyId,
+    property_name: unit.propertyName,
+  }));
 
   let unitsInserted = 0;
   if (flattenedUnits.length > 0) {
@@ -85,9 +113,9 @@ export async function seed(db: Kysely<Database>): Promise<SeedResult> {
   const rulesetResult = await db
     .insertInto('rulesets')
     .values({
-      version: parsedRulesetFile.version,
-      name: parsedRulesetFile.ruleset_name,
-      rules_json: JSON.stringify(parsedRulesetFile.rules),
+      version: domainRuleset.version,
+      name: domainRuleset.name,
+      rules_json: JSON.stringify(domainRuleset.rules),
       created_at: new Date().toISOString(),
     })
     .onConflict((oc) => oc.column('version').doNothing())

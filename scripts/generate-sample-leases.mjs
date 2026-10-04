@@ -145,9 +145,9 @@ const expected = {
   },
   "lease-02-problems-MC-B-0902.pdf": {
     unitId: "MC-B-0902",
-    rules: { R1: "FAIL", R2: "FAIL", R3: "PASS", R4: "FAIL", R5: "FAIL", R6: "FAIL", R7: "PASS" },
+    rules: { R1: "FAIL", R2: "FAIL", R3: "PASS", R4: "FAIL", R5: "FAIL", R6: "FAIL", R7: "NOT_DETERMINABLE" },
     flags: [
-      "Unit ID not stated; matched by label + parking bay",
+      "Unit ID not stated; owner to confirm (suggested MC-B-0902)",
       "Stated term (12 months) contradicts dates (18 months)",
       "Annual rent 72,000 != 6,200 x 12 (74,400)",
       "Tenant signature missing",

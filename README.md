@@ -54,12 +54,12 @@ Folders are created when their first file is needed. Routes stay thin: no busine
 | File | Unit | Exercises |
 |---|---|---|
 | `lease-01-clean-MC-B-1204.pdf` | MC-B-1204 (available) | Happy path — all rules PASS |
-| `lease-02-problems-MC-B-0902.pdf` | MC-B-0902 | R1, R2, R4, R5, R6 FAIL; unit matched by label + parking bay (no unit ID) |
+| `lease-02-problems-MC-B-0902.pdf` | MC-B-0902 | R1, R2, R4, R5, R6 FAIL; no unit ID, so the owner confirms the unit (MC-B-0902 suggested) and R7 waits on that |
 | `lease-03-occupied-MC-B-1205.pdf` | MC-B-1205 (occupied) | R3 (48-month term), R7 (unit occupied) FAIL |
 | `lease-04-quarterly-no-deposit-MC-A-0301.pdf` | MC-A-0301 | Quarterly rent normalisation; no deposit → R1 NOT_DETERMINABLE |
 | `lease-05-unknown-unit-rent-conflict.pdf` | Tower C (not in records) | R7 FAIL; conflicting monthly rent (8,500 vs 8,000) must be flagged, not silently resolved |
 
-`data/sample-leases/expected.json` holds the expected rule outcomes and flags per lease, used by tests and the stub model provider.
+`data/sample-leases/expected.json` holds the expected rule outcomes and flags per lease, before the owner has reviewed anything (for example, lease 02's R7 is NOT_DETERMINABLE until the owner confirms the unit). `unitId` is the correct unit. Used by tests and the stub model provider.
 
 - `data/sample-photos/` — AI-generated issue photos (none were provided with the brief; prompts in `PROMPTS.md`). `expected.json` was written from what each photo actually shows, not from the prompts.
 
@@ -112,7 +112,11 @@ Folders are created when their first file is needed. Routes stay thin: no busine
   - **Model output is checked like any other input.** Structured output is checked against the Zod schema. If it's invalid, the model gets one retry with the validation error, and after that the call fails with a clear error. An upstream failure (`finish_reason: error`) fails right away. Every model call logs one line with the purpose, model, tokens, time taken and result, never the content or the key.
   - **Tool errors go back to the model, not to the user.** Every tool argument is checked with Zod. A bad argument, an unknown tool or a failing handler is sent back to the model as the tool's result so it can correct itself. A turn ends when the model gives a final reply or calls `ask_user`, or after 6 steps. Every tool call is logged and returned to the caller so it can be stored with the message.
   - **Tool arguments use one type per field.** In testing, `xiaomi/mimo-v2.6-pro` failed upstream whenever a tool argument allowed two types (`string | number`). Tool schemas therefore give each field a single type.
-- **Term length counts the expiry date as inclusive.** A lease from 1 Nov 2026 to 31 Oct 2028 is 24 months. Rule R4 uses this convention.
+- **Term length counts the expiry date as inclusive.** A lease from 1 Nov 2026 to 31 Oct 2028 is 24 months. Rule R4 uses this convention. A span that isn't a whole number of months (for example a lease starting on 31 January) fails R4 so a person looks at it, rather than being rounded.
+- **Rules give one of three results: PASS, FAIL or NOT_DETERMINABLE.** Each rule is a small function in `apps/api/src/services/leases/rules.ts`. The ruleset (which rules run, their severity and version) is read from the database, which is seeded from `data/owner_ruleset.json`. Every result records the ruleset version, the clauses it relied on and a reason with the actual numbers (for example "Deposit QAR 5,000 is less than monthly rent QAR 6,200"). A missing value gives NOT_DETERMINABLE, never a guessed PASS or FAIL. A rule in the ruleset with no matching code also comes back NOT_DETERMINABLE, so the gap shows up in review.
+  - **Rent is normalised to monthly.** Quarterly or annual rent is divided down to a monthly amount (and flagged as derived) before R1 and R6 compare it. R6 allows a difference of 1 currency unit for rounding.
+  - **Only the unit ID is trusted for an automatic match; otherwise the owner confirms.** Linking a lease to the wrong unit marks the wrong unit occupied, which costs far more than one click. If the lease states a unit ID that is in the owner's records, the unit is matched. If not, the agent asks the owner, suggesting likely units: the unit page the upload started from, units whose label appears in the premises text, and units with the same parking bay. Until the owner chooses, R7 is NOT_DETERMINABLE. If there is nothing to suggest, R7 fails ("not in owner records"). The owner's choice is recorded as the unit ID, with their message as its source. A lease that names a different unit from the page it was uploaded on raises a flag.
+  - **Flags are for data problems; rules are for policy.** Flags cover missing fields, contradictions (stated term vs dates, annual vs monthly rent), missing signatures, odd values and how the unit was matched. Policy breaches, such as a term over 36 months or an occupied unit, appear as rule results and are not repeated as flags. The checks are tested against all five sample leases and `data/sample-leases/expected.json`.
 
 ## How this was built
 
