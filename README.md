@@ -187,23 +187,23 @@ Everything below was designed during planning but is **not built**. The brief's 
 
 ### Next: make it usable by a real team
 
-**1. Login and roles.** Login wasn't part of the brief, so there's no full login feature. The first step would be a test-only version that shows permissions working:
-- Test accounts in `data/users.json` (owner / `owner123`, inspector / `inspector123`) with **plain-text passwords**, deliberately and for testing only, so reviewers can sign in as each role.
-- Signing in returns a random session token kept in the API's memory.
+**1. Roles, with one-click role shortcuts instead of a login.** Login wasn't part of the brief, and a login form only slows a reviewer down. The first step is a test-only version that shows permissions working:
+- One test user per role in `data/users.json` (owner, inspector, and a tenant tied to a unit), with **no passwords**.
+- The first screen has three buttons, **Owner**, **Inspector** and **Tenant**, and the sidebar has "Switch role". Picking one returns a random session token kept in the API's memory, so a reviewer sees each role's view in one click.
 - **The real part is the role check on every API route.** That's the code we'd keep.
 - **Production would instead:**
-  - Not store passwords at all: sign in with Google or Microsoft, or use a managed auth service. At minimum, hash them with argon2 or bcrypt.
+  - Replace the role buttons with real sign-in: Google or Microsoft, or a managed auth service. If passwords are ever stored, hash them with argon2 or bcrypt.
   - Use secure HTTP-only cookies with expiry.
   - Add rate limits on login, password reset and an audit log.
   - Let an admin assign owners and inspectors, with support for several owners.
 
   Only the code that identifies the user changes; the permission checks stay as they are.
 
-| Area | Owner | Inspector | Tenant (no account) |
+| Area | Owner | Inspector | Tenant (role shortcut, or the QR link with no account) |
 |---|---|---|---|
 | Lease records (upload, review, confirm) | ✅ | ❌ | ❌ |
 | Reports (list, photos, AI assessment, work order status) | ✅ all units | ✅ all units | Their unit only, public messages |
-| Create a report | ✅ pick any unit | ✅ pick any unit | ✅ unit fixed by the QR link |
+| Create a report | ✅ pick any unit | ✅ pick any unit | ✅ their own unit only (set by the tenant user or the QR link) |
 | Approve work orders, change status | ✅ | ❌ | ❌ |
 
 **2. Tenants report by QR code, with no account.** Reporting has to be effortless:
