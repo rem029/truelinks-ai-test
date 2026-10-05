@@ -1,44 +1,25 @@
-import { useEffect, useState } from 'react';
-import { getHealth } from './utils/api.ts';
-
-type HealthStatus =
-  | { state: 'loading' }
-  | { state: 'ok' }
-  | { state: 'error'; message: string };
+import { useState, useEffect } from 'react';
+import { parseHash, type Route } from './utils/router.ts';
+import { StartPage } from './pages/StartPage.tsx';
+import { LeaseThreadPage } from './pages/LeaseThreadPage.tsx';
 
 export function App() {
-  const [status, setStatus] = useState<HealthStatus>({ state: 'loading' });
+  const [route, setRoute] = useState<Route>(() => parseHash(window.location.hash));
 
   useEffect(() => {
-    let active = true;
+    function handleHashChange() {
+      setRoute(parseHash(window.location.hash));
+    }
 
-    getHealth()
-      .then(() => {
-        if (active) {
-          setStatus({ state: 'ok' });
-        }
-      })
-      .catch((err: unknown) => {
-        if (active) {
-          const message = err instanceof Error ? err.message : String(err);
-          setStatus({ state: 'error', message });
-        }
-      });
-
+    window.addEventListener('hashchange', handleHashChange);
     return () => {
-      active = false;
+      window.removeEventListener('hashchange', handleHashChange);
     };
   }, []);
 
-  return (
-    <main style={{ fontFamily: 'sans-serif', padding: '2rem' }}>
-      <h1>TrueLinks Lease &amp; Issue Agents</h1>
-      <p>
-        API:{' '}
-        {status.state === 'loading' && 'loading...'}
-        {status.state === 'ok' && 'ok'}
-        {status.state === 'error' && `unreachable \u2014 ${status.message}`}
-      </p>
-    </main>
-  );
+  if (route.name === 'thread') {
+    return <LeaseThreadPage conversationId={route.conversationId} />;
+  }
+
+  return <StartPage />;
 }
