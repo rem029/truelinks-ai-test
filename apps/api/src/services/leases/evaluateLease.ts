@@ -1,5 +1,5 @@
 import type { LeaseDocument, LeaseRecord, RuleResult, Flag } from '@truelinks/shared';
-import type { Repositories } from '../db/repositories/index.ts';
+import type { Repositories } from '../../db/repositories/index.ts';
 import { matchUnit, type UnitMatch } from './unitMatch.ts';
 import { evaluateRules } from './rules.ts';
 import { detectFlags } from './flags.ts';

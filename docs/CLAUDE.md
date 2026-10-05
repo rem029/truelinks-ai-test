@@ -20,7 +20,7 @@ Brief: `docs/attachments/Solution-brief-explained.docx` (summary in `docs/email.
 - Model: OpenRouter (OpenAI SDK) behind a provider interface; stub provider when `OPENROUTER_API_KEY` is unset
 
 ## Folder structure
-- `apps/api/src`: `routes/` (endpoints: validate input with Zod, call a service, respond; no business logic), `services/` (business logic; no `req`/`res`) with `services/db/` (Kysely, repositories, seed) and `services/agents/` (lease + issue agents, prompt files, model provider), `migrations/` (database migrations, numbered `NNN_name.ts`; never edit one that has been committed, add a new one), `middleware/` (Express middleware), `utils/` (small pure helpers). `env.ts`, `app.ts`, `server.ts` at the root.
+- `apps/api/src`: `routes/` (endpoints: validate input with Zod, call a service, respond; no business logic), `services/` (business logic; no `req`/`res`) with `services/agents/` (lease + issue agents, prompt files, model provider), `db/` (Kysely setup, schema types, seed, repositories: data access only, no business logic), `migrations/` (database migrations, numbered `NNN_name.ts`; never edit one that has been committed, add a new one), `middleware/` (Express middleware), `utils/` (small pure helpers). `env.ts`, `app.ts`, `server.ts` at the root.
 - `apps/web/src`: `pages/` (one component per screen), `components/` (reusable), `hooks/` (when needed), `store/` (Zustand, only for state shared across screens), `utils/` (helpers; `utils/api.ts` is the only place that calls `fetch`).
 - Create a folder when its first file arrives; no empty placeholder folders.
 - Tests sit next to the file they test (`rules.ts` → `rules.test.ts`).

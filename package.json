@@ -10,7 +10,7 @@
     "test": "vitest run",
     "typecheck": "npm run typecheck --workspaces --if-present",
     "samples:leases": "node scripts/generate-sample-leases.mjs",
-    "db:seed": "tsx apps/api/src/services/db/seedCli.ts"
+    "db:seed": "tsx apps/api/src/db/seedCli.ts"
   },
   "devDependencies": {
     "@napi-rs/canvas": "^1.0.10",

@@ -1,5 +1,5 @@
 import type { Lease } from '@truelinks/shared';
-import type { Repositories } from '../../db/repositories/index.ts';
+import type { Repositories } from '../../../db/repositories/index.ts';
 import { evaluateLease } from '../evaluateLease.ts';
 import type { UnitMatch } from '../unitMatch.ts';
 import { mergeFlags } from './mergeFlags.ts';

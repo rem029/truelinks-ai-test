@@ -3,9 +3,9 @@ import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import type { CompletionRequest, CompletionResult, ModelProvider } from '../../agents/modelProvider/types.ts';
-import { createDb } from '../../db/db.ts';
+import { createDb } from '../../../db/db.ts';
 import { migrateToLatest } from '../../../migrations/migrate.ts';
-import { createRepositories } from '../../db/repositories/index.ts';
+import { createRepositories } from '../../../db/repositories/index.ts';
 import { detectHeadingsWithModel } from './detectHeadings.ts';
 import { ingestLease } from './ingestLease.ts';
 

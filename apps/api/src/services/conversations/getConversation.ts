@@ -6,7 +6,7 @@ import type {
   ConversationDetails,
   ConversationReview,
 } from '@truelinks/shared';
-import type { Repositories } from '../db/repositories/index.ts';
+import type { Repositories } from '../../db/repositories/index.ts';
 import { HttpError } from '../../utils/httpError.ts';
 import { listPendingItems, highSeverityFailures } from '../leases/review/pendingItems.ts';
 

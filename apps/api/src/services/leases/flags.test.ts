@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { loadUnits } from '../db/seed.ts';
+import { loadUnits } from '../../db/seed.ts';
 import { matchUnit } from './unitMatch.ts';
 import { detectFlags } from './flags.ts';
 import { sampleLeaseRecords } from './sampleLeaseRecords.ts';

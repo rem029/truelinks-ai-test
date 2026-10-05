@@ -6,7 +6,7 @@ import { createUnitsRouter } from './routes/units.ts';
 import { createConversationsRouter } from './routes/conversations.ts';
 import { createDocumentsRouter } from './routes/documents.ts';
 import { createIssuesRouter } from './routes/issues.ts';
-import type { Repositories } from './services/db/repositories/index.ts';
+import type { Repositories } from './db/repositories/index.ts';
 import type { ModelProvider } from './services/agents/modelProvider/types.ts';
 
 export interface AppDependencies {

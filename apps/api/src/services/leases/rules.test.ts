@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import type { Ruleset } from '@truelinks/shared';
-import { loadRuleset, loadUnits } from '../db/seed.ts';
+import { loadRuleset, loadUnits } from '../../db/seed.ts';
 import { matchUnit } from './unitMatch.ts';
 import { evaluateRules } from './rules.ts';
 import { sampleLeaseRecords } from './sampleLeaseRecords.ts';

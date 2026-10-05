@@ -1,4 +1,4 @@
-import type { Repositories } from '../db/repositories/index.ts';
+import type { Repositories } from '../../db/repositories/index.ts';
 import { HttpError } from '../../utils/httpError.ts';
 import { issuePhotoPath } from './photoFiles.ts';
 

@@ -3,7 +3,7 @@ import { resolve } from 'node:path';
 import { z } from 'zod';
 import type { Kysely } from 'kysely';
 import { Rule, Ruleset, Unit, UnitStatus } from '@truelinks/shared';
-import { REPO_ROOT } from '../../env.ts';
+import { REPO_ROOT } from '../env.ts';
 import type { Database, UnitsTable } from './schema.ts';
 
 const rawUnitSchema = z.object({

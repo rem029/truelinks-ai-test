@@ -1,9 +1,9 @@
 import { createApp } from './app.ts';
 import { env } from './env.ts';
-import { createDb } from './services/db/db.ts';
+import { createDb } from './db/db.ts';
 import { migrateToLatest } from './migrations/migrate.ts';
-import { seed } from './services/db/seed.ts';
-import { createRepositories } from './services/db/repositories/index.ts';
+import { seed } from './db/seed.ts';
+import { createRepositories } from './db/repositories/index.ts';
 import { createModelProvider } from './services/agents/modelProvider/index.ts';
 
 const db = createDb(env.DATABASE_URL);

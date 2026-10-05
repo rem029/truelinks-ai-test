@@ -9,7 +9,7 @@ import {
   type ReporterRole,
   type ReportIssueResponse,
 } from '@truelinks/shared';
-import type { Repositories } from '../db/repositories/index.ts';
+import type { Repositories } from '../../db/repositories/index.ts';
 import type { ModelProvider } from '../agents/modelProvider/types.ts';
 import { HttpError } from '../../utils/httpError.ts';
 import { analyzePhotos, type PhotoAnalysis } from './analyzePhotos.ts';

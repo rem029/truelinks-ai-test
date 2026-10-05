@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { resolve } from 'node:path';
 import { z } from 'zod';
-import type { Repositories } from '../services/db/repositories/index.ts';
+import type { Repositories } from '../db/repositories/index.ts';
 import { HttpError } from '../utils/httpError.ts';
 
 const DocumentParams = z.object({

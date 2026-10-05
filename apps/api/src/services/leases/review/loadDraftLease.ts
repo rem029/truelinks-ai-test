@@ -1,5 +1,5 @@
 import type { Conversation, Lease } from '@truelinks/shared';
-import type { Repositories } from '../../db/repositories/index.ts';
+import type { Repositories } from '../../../db/repositories/index.ts';
 import { HttpError } from '../../../utils/httpError.ts';
 
 // Validates that the conversation and lease exist and are not yet confirmed

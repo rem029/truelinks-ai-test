@@ -7,9 +7,9 @@ import { splitClauses } from './splitClauses.ts';
 import { ingestLease } from './ingestLease.ts';
 import { sampleLeaseRecords } from '../sampleLeaseRecords.ts';
 import { createStubProvider } from '../../agents/modelProvider/stubProvider.ts';
-import { createDb } from '../../db/db.ts';
+import { createDb } from '../../../db/db.ts';
 import { migrateToLatest } from '../../../migrations/migrate.ts';
-import { createRepositories } from '../../db/repositories/index.ts';
+import { createRepositories } from '../../../db/repositories/index.ts';
 
 describe('ingestSamples', () => {
   const sampleLeasesDir = resolve(import.meta.dirname, '../../../../../../data/sample-leases');

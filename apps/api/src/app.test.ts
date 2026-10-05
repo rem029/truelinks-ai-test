@@ -18,10 +18,10 @@ import {
   ReportIssueResponse,
 } from '@truelinks/shared';
 import { createApp } from './app.ts';
-import { createDb } from './services/db/db.ts';
+import { createDb } from './db/db.ts';
 import { migrateToLatest } from './migrations/migrate.ts';
-import { seed } from './services/db/seed.ts';
-import { createRepositories, type Repositories } from './services/db/repositories/index.ts';
+import { seed } from './db/seed.ts';
+import { createRepositories, type Repositories } from './db/repositories/index.ts';
 import { createStubProvider } from './services/agents/modelProvider/stubProvider.ts';
 
 describe('API', () => {

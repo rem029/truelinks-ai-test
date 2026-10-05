@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import type { AgentRun, Lease, Message } from '@truelinks/shared';
-import type { Repositories } from '../../db/repositories/index.ts';
+import type { Repositories } from '../../../db/repositories/index.ts';
 import type { ModelProvider, ChatMessage } from '../../agents/modelProvider/types.ts';
 import { HttpError } from '../../../utils/httpError.ts';
 import { listFields } from '../leaseFields.ts';

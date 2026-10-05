@@ -11,7 +11,7 @@ import {
 } from '@truelinks/shared';
 
 import { createDb } from '../db.ts';
-import { migrateToLatest } from '../../../migrations/migrate.ts';
+import { migrateToLatest } from '../../migrations/migrate.ts';
 import { seed } from '../seed.ts';
 import { createRepositories, type Repositories } from './index.ts';
 import type { Database } from '../schema.ts';

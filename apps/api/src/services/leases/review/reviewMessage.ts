@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import type { AgentRun, Lease, Message } from '@truelinks/shared';
-import type { Repositories } from '../../db/repositories/index.ts';
+import type { Repositories } from '../../../db/repositories/index.ts';
 import type { UnitMatch } from '../unitMatch.ts';
 import { buildReviewCards } from './reviewCards.ts';
 import { reevaluateLease } from './reevaluateLease.ts';

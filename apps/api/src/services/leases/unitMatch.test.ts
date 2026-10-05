@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import type { LeaseRecord, Unit } from '@truelinks/shared';
 import { matchUnit, unitNotFoundReason } from './unitMatch.ts';
 import { sampleLeaseRecords } from './sampleLeaseRecords.ts';
-import { loadUnits } from '../db/seed.ts';
+import { loadUnits } from '../../db/seed.ts';
 
 const mockUnits = loadUnits();
 

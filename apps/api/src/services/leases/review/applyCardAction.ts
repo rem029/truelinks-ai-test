@@ -7,7 +7,7 @@ import {
   type LeaseRecord,
   type Message,
 } from '@truelinks/shared';
-import type { Repositories } from '../../db/repositories/index.ts';
+import type { Repositories } from '../../../db/repositories/index.ts';
 import { HttpError } from '../../../utils/httpError.ts';
 import type { FieldPath } from '../leaseFields.ts';
 import { acceptAllFields, acceptField, editField, rejectField } from './patchRecord.ts';

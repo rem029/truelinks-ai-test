@@ -1,5 +1,5 @@
 import type { ConversationKind, ConversationSummary } from '@truelinks/shared';
-import type { Repositories } from '../db/repositories/index.ts';
+import type { Repositories } from '../../db/repositories/index.ts';
 import { listPendingItems } from '../leases/review/pendingItems.ts';
 
 export interface ListConversationsFilter {

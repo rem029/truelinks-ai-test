@@ -2,7 +2,7 @@ import { Router } from 'express';
 import multer from 'multer';
 import { z } from 'zod';
 import { Action, ConversationKind } from '@truelinks/shared';
-import type { Repositories } from '../services/db/repositories/index.ts';
+import type { Repositories } from '../db/repositories/index.ts';
 import type { ModelProvider } from '../services/agents/modelProvider/types.ts';
 import { createConversation } from '../services/conversations/createConversation.ts';
 import { getConversation } from '../services/conversations/getConversation.ts';

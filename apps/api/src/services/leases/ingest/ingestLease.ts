@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto';
 import { join } from 'node:path';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import type { Clause, ClauseSplit, LeaseDocument, Message } from '@truelinks/shared';
-import type { Repositories } from '../../db/repositories/index.ts';
+import type { Repositories } from '../../../db/repositories/index.ts';
 import type { ModelProvider } from '../../agents/modelProvider/types.ts';
 import { HttpError } from '../../../utils/httpError.ts';
 import { isSupportedMimeType, readLeaseDocument, SUPPORTED_MIME_TYPES } from './readDocument.ts';

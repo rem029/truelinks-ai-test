@@ -2,7 +2,7 @@ import { Router } from 'express';
 import multer from 'multer';
 import { z } from 'zod';
 import { ReporterRole } from '@truelinks/shared';
-import type { Repositories } from '../services/db/repositories/index.ts';
+import type { Repositories } from '../db/repositories/index.ts';
 import type { ModelProvider } from '../services/agents/modelProvider/types.ts';
 import { reportIssue } from '../services/issues/reportIssue.ts';
 import { getIssuePhoto } from '../services/issues/getPhoto.ts';

@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import type { Lease, LeaseDocument } from '@truelinks/shared';
-import type { Repositories } from '../../db/repositories/index.ts';
+import type { Repositories } from '../../../db/repositories/index.ts';
 import { defineTool, type Tool } from '../../agents/toolRegistry.ts';
 import { askUserTool } from '../../agents/askUserTool.ts';
 import { FIELD_PATHS, getField } from '../leaseFields.ts';

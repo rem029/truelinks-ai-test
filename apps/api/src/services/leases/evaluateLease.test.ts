@@ -1,10 +1,10 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import type { Kysely } from 'kysely';
-import { createDb } from '../db/db.ts';
+import { createDb } from '../../db/db.ts';
 import { migrateToLatest } from '../../migrations/migrate.ts';
-import { seed } from '../db/seed.ts';
-import { createRepositories, type Repositories } from '../db/repositories/index.ts';
-import type { Database } from '../db/schema.ts';
+import { seed } from '../../db/seed.ts';
+import { createRepositories, type Repositories } from '../../db/repositories/index.ts';
+import type { Database } from '../../db/schema.ts';
 import { evaluateLease } from './evaluateLease.ts';
 import { sampleLeaseRecords } from './sampleLeaseRecords.ts';
 
