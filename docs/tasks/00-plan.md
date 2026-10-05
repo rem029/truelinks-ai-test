@@ -31,6 +31,7 @@ Long-term vision: a property management system (tickets, roles, notifications). 
 4. Settings: units + rule thresholds, ruleset versioning (roadmap 5 · `08`)
 5. Image / scanned-PDF leases (roadmap 6)
 6. Issue approval workflow: its own table for approval steps and status history (Submitted → Awaiting owner → In progress → Resolved), linked to `issues` and `work_orders`. Statuses are as in README → Roadmap.
+7. Migration backup: back up before a pending migration, restore on failure, delete on success (`10`)
 
 ## Later — README roadmap only (not built)
 All ideas are kept and ranked in README → "Roadmap: toward a property management system" (12 items: tickets, notifications by email/WhatsApp, move-in inspection, corrections as training signal, SLAs/contractors/analytics, template fast path, in-product lease generation, natural-language rules, …). Add new ideas there, not here.
