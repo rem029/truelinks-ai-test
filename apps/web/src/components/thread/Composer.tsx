@@ -6,6 +6,7 @@ export interface ComposerProps {
   isRunning: boolean;
   hasLease: boolean;
   isConfirmed: boolean;
+  placeholder?: string;
 }
 
 export function Composer({
@@ -14,6 +15,7 @@ export function Composer({
   isRunning,
   hasLease,
   isConfirmed,
+  placeholder: placeholderOverride,
 }: ComposerProps) {
   const [text, setText] = useState('');
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -32,13 +34,13 @@ export function Composer({
     }
   }
 
-  const placeholder = !hasLease
+  const placeholder = placeholderOverride ?? (!hasLease
     ? 'Upload a lease to start'
     : isConfirmed
     ? 'Lease is confirmed. Actions disabled.'
     : isRunning
     ? 'Please wait for response…'
-    : 'Type a message or correction… (Enter sends, Shift+Enter for newline)';
+    : 'Type a message or correction… (Enter sends, Shift+Enter for newline)');
 
   return (
     <div className="composer-area">

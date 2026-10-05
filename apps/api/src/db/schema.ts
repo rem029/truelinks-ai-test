@@ -74,8 +74,12 @@ export interface WorkOrdersTable {
   severity: string;
   urgent: number;
   responsibility: string;
+  responsibility_reason: string;
+  responsibility_clause_json: string | null;
+  lease_id: string | null;
   status: string;
   created_at: string;
+  updated_at: string;
 }
 
 export interface DocumentsTable {

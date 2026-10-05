@@ -6,6 +6,7 @@ import {
   buildIssueSummaryText,
   countConditions,
   dedupeDamages,
+  shortenDamage,
 } from './summaryText.ts';
 
 interface ExpectedPhoto {
@@ -36,7 +37,7 @@ describe('summaryText helper using expected.json fixtures', () => {
 
     const summary = buildIssueSummaryText(photos);
     expect(summary).toBe(
-      'Looked at 2 photos: 1 damaged, 1 worn. Seen: brown water stain down wall below AC, water puddle on floor tiles, water dripping from AC vent/louvres, brown discoloration on AC casing, stain on wall below unit. Drafting a work order comes next.'
+      'Looked at 2 photos: 1 damaged, 1 worn. Seen: brown water stain down wall below AC, water puddle on floor tiles, water dripping from AC vent/louvres and 2 more. Drafting a work order comes next.'
     );
   });
 
@@ -89,5 +90,13 @@ describe('summaryText helper using expected.json fixtures', () => {
     ];
     const deduped = dedupeDamages(photos);
     expect(deduped).toEqual(['tap dripping', 'water puddle', 'mold in corner']);
+  });
+
+  it('shortens long model wording at a word boundary', () => {
+    expect(shortenDamage('short')).toBe('short');
+    const long = 'Split AC (wall-mounted) is leaking water; heavy brown water-stain streaks running down the wall';
+    const shortened = shortenDamage(long);
+    expect(shortened.length).toBeLessThanOrEqual(61);
+    expect(shortened).toBe('Split AC (wall-mounted) is leaking water; heavy brown…');
   });
 });

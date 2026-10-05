@@ -6,6 +6,7 @@ import { askUserTool } from '../../agents/askUserTool.ts';
 import { FIELD_PATHS, getField } from '../leaseFields.ts';
 import { editField, isLocked, parseFieldValue } from './patchRecord.ts';
 import { reevaluateLease } from './reevaluateLease.ts';
+import { isKnownUnit } from './knownUnit.ts';
 
 export interface LeaseTurnState {
   lease: Lease;
@@ -77,6 +78,9 @@ export function createLeaseTools(state: LeaseTurnState, ctx: LeaseToolsContext):
       const parsed = parseFieldValue(args.fieldPath, args.value);
       if (!parsed.ok) {
         throw new Error(parsed.error);
+      }
+      if (args.fieldPath === 'unit.unitId' && !(await isKnownUnit(parsed.value, ctx.repositories))) {
+        throw new Error(`${args.value} is not one of the owner's units; call find_unit and use a unitId it returns`);
       }
 
       const previous = current.value;

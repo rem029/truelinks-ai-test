@@ -1,17 +1,16 @@
 import type { Kysely } from 'kysely';
-import {
-  Issue,
-  WorkOrder,
-} from '@truelinks/shared';
+import { Issue, type IssuePhoto, WorkOrder } from '@truelinks/shared';
 import type { Database, IssuesTable, WorkOrdersTable } from '../schema.ts';
 
 export interface IssueRepository {
   createIssue(issue: Issue): Promise<Issue>;
   getIssue(id: string): Promise<Issue | null>;
   getByConversation(conversationId: string): Promise<Issue | null>;
+  updatePhotos(issueId: string, photos: IssuePhoto[]): Promise<void>;
   listByUnit(unitId: string): Promise<Issue[]>;
   createWorkOrder(workOrder: WorkOrder): Promise<WorkOrder>;
   getWorkOrder(id: string): Promise<WorkOrder | null>;
+  getWorkOrderByIssue(issueId: string): Promise<WorkOrder | null>;
   updateWorkOrder(workOrder: WorkOrder): Promise<WorkOrder>;
   listWorkOrdersByUnit(unitId: string): Promise<WorkOrder[]>;
 }
@@ -39,8 +38,14 @@ function workOrderToDomain(row: WorkOrdersTable): WorkOrder {
     severity: row.severity,
     urgent: row.urgent === 1,
     responsibility: row.responsibility,
+    responsibilityReason: row.responsibility_reason,
+    responsibilityClause: row.responsibility_clause_json
+      ? JSON.parse(row.responsibility_clause_json)
+      : null,
+    leaseId: row.lease_id,
     status: row.status,
     createdAt: row.created_at,
+    updatedAt: row.updated_at,
   });
 }
 
@@ -76,6 +81,17 @@ export function createIssueRepository(db: Kysely<Database>): IssueRepository {
       return row ? issueToDomain(row) : null;
     },
 
+    async updatePhotos(issueId: string, photos: IssuePhoto[]): Promise<void> {
+      const result = await db
+        .updateTable('issues')
+        .set({ photos_json: JSON.stringify(photos) })
+        .where('id', '=', issueId)
+        .executeTakeFirst();
+      if (result.numUpdatedRows === 0n) {
+        throw new Error(`Issue ${issueId} not found`);
+      }
+    },
+
     async listByUnit(unitId: string): Promise<Issue[]> {
       const rows = await db
         .selectFrom('issues')
@@ -99,8 +115,14 @@ export function createIssueRepository(db: Kysely<Database>): IssueRepository {
           severity: workOrder.severity,
           urgent: workOrder.urgent ? 1 : 0,
           responsibility: workOrder.responsibility,
+          responsibility_reason: workOrder.responsibilityReason,
+          responsibility_clause_json: workOrder.responsibilityClause
+            ? JSON.stringify(workOrder.responsibilityClause)
+            : null,
+          lease_id: workOrder.leaseId,
           status: workOrder.status,
           created_at: workOrder.createdAt,
+          updated_at: workOrder.updatedAt,
         })
         .execute();
       return workOrder;
@@ -108,6 +130,16 @@ export function createIssueRepository(db: Kysely<Database>): IssueRepository {
 
     async getWorkOrder(id: string): Promise<WorkOrder | null> {
       const row = await db.selectFrom('work_orders').selectAll().where('id', '=', id).executeTakeFirst();
+      return row ? workOrderToDomain(row) : null;
+    },
+
+    async getWorkOrderByIssue(issueId: string): Promise<WorkOrder | null> {
+      const row = await db
+        .selectFrom('work_orders')
+        .selectAll()
+        .where('issue_id', '=', issueId)
+        .orderBy('created_at', 'desc')
+        .executeTakeFirst();
       return row ? workOrderToDomain(row) : null;
     },
 
@@ -121,7 +153,13 @@ export function createIssueRepository(db: Kysely<Database>): IssueRepository {
           severity: workOrder.severity,
           urgent: workOrder.urgent ? 1 : 0,
           responsibility: workOrder.responsibility,
+          responsibility_reason: workOrder.responsibilityReason,
+          responsibility_clause_json: workOrder.responsibilityClause
+            ? JSON.stringify(workOrder.responsibilityClause)
+            : null,
+          lease_id: workOrder.leaseId,
           status: workOrder.status,
+          updated_at: workOrder.updatedAt,
         })
         .where('id', '=', workOrder.id)
         .returningAll()

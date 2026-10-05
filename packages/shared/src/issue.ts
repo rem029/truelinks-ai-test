@@ -29,6 +29,16 @@ export const Issue = z.object({
 });
 export type Issue = z.infer<typeof Issue>;
 
+export const Responsibility = z.enum(['landlord', 'tenant', 'split', 'unknown']);
+export type Responsibility = z.infer<typeof Responsibility>;
+
+export const ResponsibilityClause = z.object({
+  clauseId: z.string(),
+  heading: z.string(),
+  quote: z.string(),
+});
+export type ResponsibilityClause = z.infer<typeof ResponsibilityClause>;
+
 export const WorkOrderStatus = z.enum(['draft', 'accepted', 'rejected']);
 export type WorkOrderStatus = z.infer<typeof WorkOrderStatus>;
 
@@ -42,8 +52,13 @@ export const WorkOrder = z.object({
   severity: Severity,
   urgent: z.boolean(),
   // Suggested party responsible according to the lease clauses; advisory only
-  responsibility: z.string(),
+  responsibility: Responsibility,
+  responsibilityReason: z.string(),
+  responsibilityClause: ResponsibilityClause.nullable(),
+  leaseId: z.string().nullable(),
   status: WorkOrderStatus,
   createdAt: z.iso.datetime({ offset: true }),
+  updatedAt: z.iso.datetime({ offset: true }),
 });
 export type WorkOrder = z.infer<typeof WorkOrder>;
+

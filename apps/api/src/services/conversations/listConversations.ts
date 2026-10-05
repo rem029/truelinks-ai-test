@@ -22,6 +22,7 @@ export async function listConversations(
       if (!issue) {
         continue;
       }
+      const workOrder = await repositories.issues.getWorkOrderByIssue(issue.id);
 
       summaries.push({
         id: conv.id,
@@ -33,6 +34,9 @@ export async function listConversations(
         analysisStatus: null,
         openItems: null,
         photoCount: issue.photos.length,
+        workOrder: workOrder
+          ? { title: workOrder.title, status: workOrder.status, severity: workOrder.severity, urgent: workOrder.urgent }
+          : null,
         createdAt: conv.createdAt,
         updatedAt: conv.updatedAt,
       });
@@ -55,6 +59,7 @@ export async function listConversations(
       analysisStatus: lease?.analysisStatus ?? null,
       openItems: lease ? listPendingItems(lease).length : null,
       photoCount: null,
+      workOrder: null,
       createdAt: conv.createdAt,
       updatedAt: conv.updatedAt,
     });

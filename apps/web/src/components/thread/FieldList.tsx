@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import type { Lease, Action } from '@truelinks/shared';
+import { UnitSelect } from '../UnitSelect.tsx';
 import {
   listAllFields,
   type FieldPath,
@@ -103,7 +104,9 @@ export function FieldList({
                 <td>{getFieldLabel(path)}</td>
                 <td>
                   {isEditingThis ? (
-                    isBooleanField ? (
+                    path === 'unit.unitId' ? (
+                      <UnitSelect value={editValue} onChange={setEditValue} disabled={submitting} />
+                    ) : isBooleanField ? (
                       <select
                         value={editValue}
                         onChange={(e) => setEditValue(e.target.value)}

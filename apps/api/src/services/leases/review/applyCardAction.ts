@@ -18,6 +18,7 @@ import { listPendingItems } from './pendingItems.ts';
 import { addReviewMessage } from './reviewMessage.ts';
 import { confirmLease } from './confirmLease.ts';
 import { loadDraftLease } from './loadDraftLease.ts';
+import { isKnownUnit } from './knownUnit.ts';
 
 export interface CardActionContext {
   repositories: Repositories;
@@ -135,6 +136,13 @@ export async function applyCardAction(
 
   switch (parsedCard.kind) {
     case 'field': {
+      if (
+        action.type === 'edit' &&
+        parsedCard.fieldPath === 'unit.unitId' &&
+        !(await isKnownUnit(action.value, repositories))
+      ) {
+        throw new HttpError(400, `${String(action.value)} is not one of your units`);
+      }
       const res = applyFieldAction(action, parsedCard.fieldPath, record, userMessageId, now);
       record = res.record;
       userText = res.userText;

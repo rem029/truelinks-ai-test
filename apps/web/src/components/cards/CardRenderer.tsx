@@ -1,4 +1,4 @@
-import type { Card, Action, Lease, LeaseDocument } from '@truelinks/shared';
+import type { Card, Action, IssuePhoto, Lease, LeaseDocument, WorkOrder } from '@truelinks/shared';
 import { SummaryCardView } from './SummaryCardView.tsx';
 import { UnitMatchCardView } from './UnitMatchCardView.tsx';
 import { FlagCardView } from './FlagCardView.tsx';
@@ -15,6 +15,8 @@ export interface CardRendererProps {
   documents: LeaseDocument[];
   onAction: (action: Action) => Promise<void>;
   conversationId?: string;
+  workOrder?: WorkOrder | null;
+  issuePhotos?: IssuePhoto[];
 }
 
 export function CardRenderer({
@@ -24,6 +26,8 @@ export function CardRenderer({
   documents,
   onAction,
   conversationId,
+  workOrder = null,
+  issuePhotos = [],
 }: CardRendererProps) {
   switch (card.type) {
     case 'summary':
@@ -81,7 +85,16 @@ export function CardRenderer({
     }
 
     case 'workOrder':
-      return <WorkOrderCardView card={card} />;
+      return (
+        <WorkOrderCardView
+          card={card}
+          isInteractive={isInteractive}
+          currentWorkOrder={workOrder}
+          photos={issuePhotos}
+          conversationId={conversationId ?? ''}
+          onAction={onAction}
+        />
+      );
 
     case 'condition':
       return (

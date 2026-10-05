@@ -10,7 +10,7 @@ import {
   postMessage,
   ApiError,
 } from '../utils/api.ts';
-import { navigate } from '../utils/router.ts';
+import { navigate, threadParent } from '../utils/router.ts';
 import { MessageItem } from '../components/thread/MessageItem.tsx';
 import { UploadDropZone } from '../components/thread/UploadDropZone.tsx';
 import { ConfirmBar } from '../components/thread/ConfirmBar.tsx';
@@ -242,9 +242,9 @@ export function LeaseThreadPage({ conversationId, initialData }: LeaseThreadPage
             <button
               type="button"
               className="btn btn-subtle btn-sm"
-              onClick={() => navigate({ name: 'home' })}
+              onClick={() => navigate(threadParent('lease', lease?.unitId ?? conversation.unitId))}
             >
-              ← All reviews
+              ← {lease?.unitId ?? conversation.unitId ?? 'Unassigned'}
             </button>
             <div className="thread-title">
               <span>Lease Review</span>

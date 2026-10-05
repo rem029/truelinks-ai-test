@@ -15,6 +15,7 @@ import { HttpError } from '../../utils/httpError.ts';
 import { analyzePhotos, type PhotoAnalysis } from './analyzePhotos.ts';
 import { buildIssueSummaryText } from './summaryText.ts';
 import { issuePhotoPath } from './photoFiles.ts';
+import { needsWorkOrder, runWorkOrderTurn } from './workOrderTurn.ts';
 
 const ALLOWED_MIME_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp']);
 
@@ -53,9 +54,13 @@ export async function reportIssue(
     throw new HttpError(400, 'Conversation must be an issue conversation with a unit assigned');
   }
 
+  // More photos can be added (e.g. a clearer one) until a work order has been drafted from them
   const existingIssue = await repositories.issues.getByConversation(conversationId);
-  if (existingIssue) {
-    throw new HttpError(409, `An issue report already exists for conversation ${conversationId}`);
+  if (existingIssue && (await repositories.issues.getWorkOrderByIssue(existingIssue.id))) {
+    throw new HttpError(
+      409,
+      'A work order is already drafted for this issue; reply in the thread to change it'
+    );
   }
 
   if (!photos || photos.length === 0) {
@@ -85,7 +90,7 @@ export async function reportIssue(
   }
 
   // 2. Prepare IDs and write files to ${uploadDir}/issues/<issueId>/<photoId>.<ext>
-  const issueId = randomUUID();
+  const issueId = existingIssue?.id ?? randomUUID();
   const issueDir = resolve(uploadDir, 'issues', issueId);
   mkdirSync(issueDir, { recursive: true });
 
@@ -109,15 +114,17 @@ export async function reportIssue(
 
   const now = new Date().toISOString();
 
-  const issue: Issue = {
-    id: issueId,
-    unitId: conversation.unitId,
-    conversationId,
-    reporterRole,
-    note: note?.trim() || undefined,
-    photos: issuePhotos,
-    createdAt: now,
-  };
+  const issue: Issue = existingIssue
+    ? { ...existingIssue, photos: [...existingIssue.photos, ...issuePhotos] }
+    : {
+        id: issueId,
+        unitId: conversation.unitId,
+        conversationId,
+        reporterRole,
+        note: note?.trim() || undefined,
+        photos: issuePhotos,
+        createdAt: now,
+      };
 
   const userMessage: Message = {
     id: randomUUID(),
@@ -156,13 +163,24 @@ export async function reportIssue(
 
   // 3. Atomically persist issue and messages in transaction
   await repositories.transaction(async (trx) => {
-    await trx.issues.createIssue(issue);
+    if (existingIssue) {
+      await trx.issues.updatePhotos(issue.id, issue.photos);
+    } else {
+      await trx.issues.createIssue(issue);
+    }
     await trx.conversations.addMessage(userMessage);
     await trx.conversations.addMessage(assistantMessage);
   });
 
+  // 4. Draft the work order. The report is already saved, so a failure here leaves it in place and
+  // the reporter can retry by sending a message.
+  if (!needsWorkOrder(issue)) {
+    return { issue, workOrder: null, messages: [userMessage, assistantMessage] };
+  }
+  const turn = await runWorkOrderTurn(conversationId, null, { repositories, modelProvider });
   return {
     issue,
-    messages: [userMessage, assistantMessage],
+    workOrder: turn.workOrder,
+    messages: [userMessage, assistantMessage, ...turn.messages],
   };
 }

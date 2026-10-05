@@ -101,6 +101,20 @@ describe('leaseTools', () => {
     expect(getField(state.lease.record, 'rent.amount').value).toBe(8500);
   });
 
+  it('update_field only sets the unit ID to one of the owner\'s units', async () => {
+    const { document, lease } = await setupLease01();
+    const state: LeaseTurnState = { lease: { ...lease }, document, messageId: 'msg-1' };
+    const updateTool = createLeaseTools(state, { repositories }).find((t) => t.name === 'update_field')!;
+
+    const unknown = await updateTool.run({ fieldPath: 'unit.unitId', value: 'Apartment 1204' });
+    expect(unknown).toMatchObject({ ok: false });
+    expect(unknown.ok ? '' : unknown.error).toContain('find_unit');
+
+    const known = await updateTool.run({ fieldPath: 'unit.unitId', value: 'MC-B-1205' });
+    expect(known.ok).toBe(true);
+    expect(getField(state.lease.record, 'unit.unitId').value).toBe('MC-B-1205');
+  });
+
   it('update_field refuses locked field and leaves it unchanged', async () => {
     const { document, lease } = await setupLease01();
     const lockedRecord = acceptField(lease.record, 'rent.amount', new Date().toISOString());

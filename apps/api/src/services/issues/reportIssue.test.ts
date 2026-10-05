@@ -70,8 +70,15 @@ describe('reportIssue service', () => {
     expect(result.issue.note).toBe('AC is leaking water on the floor');
     expect(result.issue.photos).toHaveLength(2);
 
-    expect(result.messages).toHaveLength(2);
-    const [userMsg, assistantMsg] = result.messages;
+    // Report message pair, then the work order agent's reply with the draft
+    expect(result.messages).toHaveLength(3);
+    const [userMsg, assistantMsg, draftMsg] = result.messages;
+    expect(draftMsg?.cards[0]?.type).toBe('workOrder');
+    expect(result.workOrder?.status).toBe('draft');
+    expect(result.workOrder?.category).toBe('HVAC');
+    // The seed has no confirmed lease, so the agent may not name a party
+    expect(result.workOrder?.responsibility).toBe('unknown');
+    expect(result.workOrder?.leaseId).toBeNull();
     expect(userMsg?.role).toBe('user');
     expect(userMsg?.text).toBe('AC is leaking water on the floor');
     expect(userMsg?.attachments).toHaveLength(2);
@@ -167,50 +174,43 @@ describe('reportIssue service', () => {
     expect(assistantMsg?.text).not.toContain('Drafting a work order');
   });
 
-  it('rejects second issue report on the same conversation with 409', async () => {
+  it('adds a clearer photo to the same issue, then drafts; a report after the draft is 409', async () => {
     const conv = await repos.conversations.create({
-      id: 'conv-issue-dup',
+      id: 'conv-issue-more',
       kind: 'issue',
-      unitId: 'MC-B-1204',
+      unitId: 'MC-A-0301',
       status: 'open',
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     });
+    const ctx = { repositories: repos, uploadDir, modelProvider: stubProvider };
+    const photo = (name: string) => ({
+      buffer: readFileSync(resolve(REPO_ROOT, 'data/sample-photos', name)),
+      originalName: name,
+      mimeType: 'image/jpeg',
+    });
 
-    const photo = readFileSync(resolve(REPO_ROOT, 'data/sample-photos/issue-04-move-in-ok-1.jpg'));
-
-    await reportIssue(
-      {
-        conversationId: conv.id,
-        reporterRole: 'tenant',
-        photos: [{ buffer: photo, originalName: 'issue-04-move-in-ok-1.jpg', mimeType: 'image/jpeg' }],
-      },
-      { repositories: repos, uploadDir, modelProvider: stubProvider }
+    const unclear = await reportIssue(
+      { conversationId: conv.id, reporterRole: 'inspector', photos: [photo('issue-05-unclear-1.jpg')] },
+      ctx
     );
+    expect(unclear.workOrder).toBeNull();
+
+    const clearer = await reportIssue(
+      { conversationId: conv.id, reporterRole: 'inspector', photos: [photo('issue-03-water-heater-1.jpg')] },
+      ctx
+    );
+    expect(clearer.issue.id).toBe(unclear.issue.id);
+    expect(clearer.issue.photos).toHaveLength(2);
+    expect(clearer.workOrder?.severity).toBe('high');
+    expect(clearer.workOrder?.urgent).toBe(true);
 
     await expect(
       reportIssue(
-        {
-          conversationId: conv.id,
-          reporterRole: 'tenant',
-          photos: [{ buffer: photo, originalName: 'issue-04-move-in-ok-1.jpg', mimeType: 'image/jpeg' }],
-        },
-        { repositories: repos, uploadDir, modelProvider: stubProvider }
+        { conversationId: conv.id, reporterRole: 'inspector', photos: [photo('issue-03-water-heater-2.jpg')] },
+        ctx
       )
-    ).rejects.toThrow(HttpError);
-
-    try {
-      await reportIssue(
-        {
-          conversationId: conv.id,
-          reporterRole: 'tenant',
-          photos: [{ buffer: photo, originalName: 'issue-04-move-in-ok-1.jpg', mimeType: 'image/jpeg' }],
-        },
-        { repositories: repos, uploadDir, modelProvider: stubProvider }
-      );
-    } catch (err) {
-      expect((err as HttpError).status).toBe(409);
-    }
+    ).rejects.toMatchObject({ status: 409 });
   });
 
   it('rejects wrong kind, missing unit, no photos, or bad mime with 400', async () => {

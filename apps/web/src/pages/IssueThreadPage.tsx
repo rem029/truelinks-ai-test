@@ -1,13 +1,16 @@
 import { useState, useEffect, useRef } from 'react';
-import type { ConversationDetails } from '@truelinks/shared';
+import type { Action, ConversationDetails } from '@truelinks/shared';
 import {
   getConversation,
   reportIssue,
   getIssuePhotoUrl,
+  postWorkOrderAction,
+  postIssueMessage,
 } from '../utils/api.ts';
-import { navigate } from '../utils/router.ts';
+import { navigate, threadParent } from '../utils/router.ts';
 import { CardRenderer } from '../components/cards/CardRenderer.tsx';
 import { IssueReportForm, type IssueReportFormData } from '../components/issue/IssueReportForm.tsx';
+import { Composer } from '../components/thread/Composer.tsx';
 
 export interface IssueThreadPageProps {
   conversationId: string;
@@ -20,6 +23,8 @@ export function IssueThreadPage({ conversationId, initialData }: IssueThreadPage
   const [pageError, setPageError] = useState<string | null>(null);
 
   const scrollAreaRef = useRef<HTMLDivElement>(null);
+  const latestMessageRef = useRef<HTMLDivElement>(null);
+  const [pendingText, setPendingText] = useState<string | null>(null);
 
   useEffect(() => {
     if (initialData) return;
@@ -46,17 +51,54 @@ export function IssueThreadPage({ conversationId, initialData }: IssueThreadPage
     };
   }, [conversationId, initialData]);
 
-  async function handleReportSubmit(formData: IssueReportFormData) {
-    const response = await reportIssue(conversationId, formData);
-    setData((prev) => {
-      if (!prev) return prev;
-      return {
-        ...prev,
-        issue: response.issue,
-        messages: response.messages,
-      };
-    });
+  const [actionError, setActionError] = useState<string | null>(null);
+  const [isRunning, setIsRunning] = useState(false);
+
+  async function refetch() {
+    setData(await getConversation(conversationId));
   }
+
+  // A failed draft still leaves the saved report and its messages, so always reload afterwards
+  async function handleReportSubmit(formData: IssueReportFormData) {
+    try {
+      await reportIssue(conversationId, formData);
+    } finally {
+      await refetch();
+    }
+  }
+
+  async function runTurn(send: () => Promise<unknown>, text: string | null = null) {
+    setIsRunning(true);
+    setPendingText(text);
+    setActionError(null);
+    try {
+      await send();
+    } catch (err: unknown) {
+      setActionError(err instanceof Error ? err.message : String(err));
+    } finally {
+      await refetch();
+      setIsRunning(false);
+      setPendingText(null);
+    }
+  }
+
+  async function handleAction(action: Action) {
+    await runTurn(() => postWorkOrderAction(conversationId, action));
+  }
+
+  async function handleSendMessage(text: string) {
+    await runTurn(() => postIssueMessage(conversationId, text), text);
+  }
+
+  const messageCount = data?.messages.length ?? 0;
+  // Show the start of the newest message when one arrives; follow the pending message while waiting
+  useEffect(() => {
+    if (pendingText) {
+      scrollAreaRef.current?.scrollTo({ top: scrollAreaRef.current.scrollHeight, behavior: 'smooth' });
+    } else if (messageCount > 0) {
+      latestMessageRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }, [messageCount, pendingText]);
 
   if (loading) {
     return (
@@ -84,8 +126,15 @@ export function IssueThreadPage({ conversationId, initialData }: IssueThreadPage
     );
   }
 
-  const { conversation, messages, issue } = data;
+  const { conversation, messages, issue, workOrder } = data;
   const hasIssue = Boolean(issue);
+  const isOpen = conversation.status === 'open';
+  // Only the newest work order card takes actions; older ones show the draft as it was
+  const latestWorkOrderMessageId = [...messages]
+    .reverse()
+    .find((m) => m.cards.some((c) => c.type === 'workOrder'))?.id;
+  // Photos can be added (e.g. a clearer one) until a work order is drafted
+  const canAddPhotos = hasIssue && isOpen && !workOrder;
 
   return (
     <div className="app-container">
@@ -96,9 +145,9 @@ export function IssueThreadPage({ conversationId, initialData }: IssueThreadPage
             <button
               type="button"
               className="btn btn-subtle btn-sm"
-              onClick={() => navigate({ name: 'home' })}
+              onClick={() => navigate(threadParent('issue', conversation.unitId))}
             >
-              ← All reviews
+              ← {conversation.unitId ?? 'Home'}
             </button>
             <div className="thread-title">
               <span>Issue report</span>
@@ -116,8 +165,12 @@ export function IssueThreadPage({ conversationId, initialData }: IssueThreadPage
             <IssueReportForm onSubmit={handleReportSubmit} />
           ) : (
             <>
-              {messages.map((msg) => (
-                <div key={msg.id} className={`message-row ${msg.role}`}>
+              {messages.map((msg, index) => (
+                <div
+                  key={msg.id}
+                  ref={index === messages.length - 1 ? latestMessageRef : undefined}
+                  className={`message-row ${msg.role}`}
+                >
                   {msg.text && <div className="message-bubble">{msg.text}</div>}
 
                   {/* User attachments (photo thumbnails) */}
@@ -142,27 +195,64 @@ export function IssueThreadPage({ conversationId, initialData }: IssueThreadPage
                     </div>
                   )}
 
-                  {/* Assistant cards (ConditionCard) */}
+                  {/* Assistant cards (condition, work order) */}
                   {msg.role === 'assistant' && msg.cards.length > 0 && (
                     <div className="cards-container">
                       {msg.cards.map((card) => (
                         <CardRenderer
                           key={card.id}
                           card={card}
-                          isInteractive={false}
+                          isInteractive={isOpen && msg.id === latestWorkOrderMessageId}
                           lease={null}
                           documents={[]}
-                          onAction={async () => {}}
+                          onAction={handleAction}
                           conversationId={conversationId}
+                          workOrder={workOrder}
+                          issuePhotos={issue?.photos ?? []}
                         />
                       ))}
                     </div>
                   )}
                 </div>
               ))}
+              {pendingText && (
+                <>
+                  <div className="message-row user pending">
+                    <div className="message-bubble message-bubble-pending">{pendingText}</div>
+                  </div>
+                  <div className="agent-working-status">
+                    <span className="agent-working-dot">⚡</span>
+                    <span>Redrafting the work order…</span>
+                  </div>
+                </>
+              )}
+              {canAddPhotos && <IssueReportForm title="Add more photos" onSubmit={handleReportSubmit} />}
             </>
           )}
         </div>
+
+        {actionError && (
+          <div className="form-error-alert" role="alert">
+            {actionError}
+          </div>
+        )}
+
+        {hasIssue && (
+          <Composer
+            onSendMessage={handleSendMessage}
+            disabled={!isOpen}
+            isRunning={isRunning}
+            hasLease
+            isConfirmed={!isOpen}
+            placeholder={
+              !isOpen
+                ? 'Work order accepted.'
+                : isRunning
+                  ? 'Please wait for the response…'
+                  : 'Describe a correction, e.g. “the drain is the landlord’s” (Enter sends)'
+            }
+          />
+        )}
       </div>
     </div>
   );

@@ -296,25 +296,43 @@ describe('Repositories round-trip with JSON column boundary parsing', () => {
       category: 'HVAC',
       severity: 'medium',
       urgent: false,
-      responsibility: 'landlord (lease 01 clause 7)',
+      responsibility: 'landlord',
+      responsibilityReason: 'Landlord is responsible for HVAC maintenance under clause 7',
+      responsibilityClause: {
+        clauseId: 'clause-7',
+        heading: 'HVAC Maintenance',
+        quote: 'Landlord shall maintain all built-in HVAC systems.',
+      },
+      leaseId: 'lease-1',
       status: 'draft',
       createdAt: '2026-10-04T14:05:00.000Z',
+      updatedAt: '2026-10-04T14:05:00.000Z',
     };
 
     await repos.issues.createWorkOrder(workOrder);
     const fetchedWo = await repos.issues.getWorkOrder('wo-1');
     expect(fetchedWo).toEqual(workOrder);
 
+    const fetchedByIssue = await repos.issues.getWorkOrderByIssue('iss-1');
+    expect(fetchedByIssue).toEqual(workOrder);
+    expect(fetchedByIssue?.responsibilityClause).toEqual({
+      clauseId: 'clause-7',
+      heading: 'HVAC Maintenance',
+      quote: 'Landlord shall maintain all built-in HVAC systems.',
+    });
+
     const updatedWo: WorkOrder = {
       ...workOrder,
       status: 'accepted',
       urgent: true,
+      updatedAt: '2026-10-04T14:10:00.000Z',
     };
     await repos.issues.updateWorkOrder(updatedWo);
 
     const reFetchedWo = await repos.issues.getWorkOrder('wo-1');
     expect(reFetchedWo?.status).toBe('accepted');
     expect(reFetchedWo?.urgent).toBe(true);
+    expect(reFetchedWo?.updatedAt).toBe('2026-10-04T14:10:00.000Z');
 
     const woList = await repos.issues.listWorkOrdersByUnit('MC-B-1204');
     expect(woList).toHaveLength(1);
@@ -327,6 +345,16 @@ describe('Repositories round-trip with JSON column boundary parsing', () => {
     await expect(repos.issues.updateWorkOrder(nonExistentWo)).rejects.toThrow(
       'WorkOrder NON_EXISTENT not found'
     );
+
+    const newerWo: WorkOrder = {
+      ...workOrder,
+      id: 'wo-2',
+      createdAt: '2026-10-04T15:00:00.000Z',
+      updatedAt: '2026-10-04T15:00:00.000Z',
+    };
+    await repos.issues.createWorkOrder(newerWo);
+    const latestWo = await repos.issues.getWorkOrderByIssue('iss-1');
+    expect(latestWo?.id).toBe('wo-2');
   });
 
   it('DocumentRepository: create, get, and listByConversation', async () => {

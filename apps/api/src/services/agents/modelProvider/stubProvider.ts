@@ -5,6 +5,7 @@ import { IssueCondition } from '@truelinks/shared';
 import { REPO_ROOT } from '../../../env.ts';
 import type { CompletionRequest, CompletionResult, ModelProvider, ToolCall } from './types.ts';
 import { parseCorrection } from './parseCorrection.ts';
+import { stubWorkOrder, type ExpectedWorkOrder } from './stubWorkOrder.ts';
 import { blankLeaseRecord, sampleLeaseAnalyses, sampleLeaseRecords } from '../../leases/sampleLeaseRecords.ts';
 import { toExtraction } from '../../leases/extract/fromRecord.ts';
 
@@ -175,9 +176,11 @@ export function createStubProvider(): ModelProvider {
   const parsedJson = ExpectedPhotosFileSchema.parse(JSON.parse(rawData));
 
   const photoMap = new Map<string, ExpectedPhotoEntry>();
+  const workOrderFixtures: ExpectedWorkOrder[] = [];
   for (const [key, value] of Object.entries(parsedJson)) {
     if (key === '_note' || typeof value !== 'object' || value === null) continue;
     if ('photos' in value && value.photos) {
+      workOrderFixtures.push({ photoFilenames: Object.keys(value.photos), workOrder: value.workOrder });
       for (const [filename, photo] of Object.entries(value.photos)) {
         photoMap.set(filename, photo);
       }
@@ -189,6 +192,9 @@ export function createStubProvider(): ModelProvider {
     async complete<T = unknown>(req: CompletionRequest<T>): Promise<CompletionResult<T>> {
       if (req.purpose === 'photo-analysis') {
         return photoAnalysis(req, photoMap);
+      }
+      if (req.purpose === 'work-order') {
+        return stubWorkOrder(req, workOrderFixtures);
       }
       if (req.purpose === 'lease-correction') {
         return leaseCorrection(req);

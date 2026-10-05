@@ -3,7 +3,7 @@ import { Card } from './cards.ts';
 import { RuleResult } from './rules.ts';
 import { Lease, LeaseStatus, LeaseAnalysisStatus } from './lease.ts';
 import { LeaseDocument } from './leaseDocument.ts';
-import { Issue } from './issue.ts';
+import { Issue, WorkOrder } from './issue.ts';
 
 export const ConversationKind = z.enum(['lease', 'issue']);
 export type ConversationKind = z.infer<typeof ConversationKind>;
@@ -75,6 +75,7 @@ export const ConversationDetails = z.object({
   lease: Lease.nullable(),
   review: ConversationReview.nullable(),
   issue: Issue.nullable(),
+  workOrder: WorkOrder.nullable(),
 });
 export type ConversationDetails = z.infer<typeof ConversationDetails>;
 
@@ -94,9 +95,20 @@ export type ConversationActionResponse = z.infer<typeof ConversationActionRespon
 
 export const ReportIssueResponse = z.object({
   issue: Issue,
+  workOrder: WorkOrder.nullable(),
   messages: z.array(Message),
 });
 export type ReportIssueResponse = z.infer<typeof ReportIssueResponse>;
+
+export const WorkOrderTurnResponse = z.object({
+  workOrder: WorkOrder.nullable(),
+  messages: z.array(Message),
+});
+export type WorkOrderTurnResponse = z.infer<typeof WorkOrderTurnResponse>;
+
+// What a unit's issue list shows about the report's work order
+export const WorkOrderSummary = WorkOrder.pick({ title: true, status: true, severity: true, urgent: true });
+export type WorkOrderSummary = z.infer<typeof WorkOrderSummary>;
 
 export const ConversationSummary = z.object({
   id: z.string(),
@@ -108,6 +120,7 @@ export const ConversationSummary = z.object({
   analysisStatus: LeaseAnalysisStatus.nullable(),
   openItems: z.number().int().nonnegative().nullable(),
   photoCount: z.number().int().nonnegative().nullable(),
+  workOrder: WorkOrderSummary.nullable(),
   createdAt: z.iso.datetime({ offset: true }),
   updatedAt: z.iso.datetime({ offset: true }),
 });

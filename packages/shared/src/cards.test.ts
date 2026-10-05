@@ -104,9 +104,13 @@ describe('Card union and ALLOWED_ACTIONS', () => {
         category: 'HVAC',
         severity: 'medium',
         urgent: false,
-        responsibility: 'landlord (clause 7)',
+        responsibility: 'landlord',
+        responsibilityReason: 'Lease clause 7 makes the landlord maintain AC units',
+        responsibilityClause: { clauseId: 'c7', heading: '7. Maintenance', quote: 'air-conditioning units' },
+        leaseId: 'lease-1',
         status: 'draft',
         createdAt: '2026-10-04T10:00:00.000Z',
+        updatedAt: '2026-10-04T10:00:00.000Z',
       },
     };
 

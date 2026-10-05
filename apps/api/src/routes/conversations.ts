@@ -11,8 +11,7 @@ import { ingestLease } from '../services/leases/ingest/ingestLease.ts';
 import { extractLease } from '../services/leases/extract/extractLease.ts';
 import { analyzeLease } from '../services/leases/extract/analyzeLease.ts';
 import { addFirstReviewMessage } from '../services/leases/review/reviewMessage.ts';
-import { applyCardAction } from '../services/leases/review/applyCardAction.ts';
-import { runCorrectionTurn } from '../services/leases/review/correctionTurn.ts';
+import { applyAction, postMessage } from '../services/conversations/conversationTurn.ts';
 import { HttpError } from '../utils/httpError.ts';
 
 const CreateConversationBody = z.object({
@@ -92,14 +91,14 @@ export function createConversationsRouter(
   router.post('/conversations/:id/actions', async (req, res) => {
     const { id: conversationId } = ConversationParams.parse(req.params);
     const action = Action.parse(req.body);
-    const outcome = await applyCardAction(conversationId, action, { repositories });
+    const outcome = await applyAction(conversationId, action, { repositories, modelProvider });
     res.json(outcome);
   });
 
   router.post('/conversations/:id/messages', async (req, res) => {
     const { id: conversationId } = ConversationParams.parse(req.params);
     const { text } = PostMessageBody.parse(req.body);
-    const outcome = await runCorrectionTurn(conversationId, text, { repositories, modelProvider });
+    const outcome = await postMessage(conversationId, text, { repositories, modelProvider });
     res.json(outcome);
   });
 

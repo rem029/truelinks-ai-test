@@ -11,6 +11,7 @@ import {
   ConversationSummary,
   type ReporterRole,
   ReportIssueResponse,
+  WorkOrderTurnResponse,
 } from '@truelinks/shared';
 
 export class ApiError extends Error {
@@ -155,6 +156,37 @@ export async function reportIssue(
       body: formData,
     },
     ReportIssueResponse
+  );
+}
+
+// Issue reports use the same thread endpoints as lease reviews; the reply carries the work order instead of a lease
+export async function postWorkOrderAction(
+  conversationId: string,
+  action: Action
+): Promise<WorkOrderTurnResponse> {
+  return request(
+    `/api/conversations/${encodeURIComponent(conversationId)}/actions`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(action),
+    },
+    WorkOrderTurnResponse
+  );
+}
+
+export async function postIssueMessage(
+  conversationId: string,
+  text: string
+): Promise<WorkOrderTurnResponse> {
+  return request(
+    `/api/conversations/${encodeURIComponent(conversationId)}/messages`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text }),
+    },
+    WorkOrderTurnResponse
   );
 }
 

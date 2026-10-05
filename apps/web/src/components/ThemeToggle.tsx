@@ -51,7 +51,12 @@ function MoonIcon() {
   );
 }
 
-export function ThemeToggle() {
+export interface ThemeToggleProps {
+  // Show "Light mode" / "Dark mode" next to the icon
+  showLabel?: boolean;
+}
+
+export function ThemeToggle({ showLabel = false }: ThemeToggleProps) {
   const [theme, setTheme] = useState<Theme>(() => getStoredTheme() ?? systemTheme());
 
   useEffect(() => {
@@ -93,6 +98,7 @@ export function ThemeToggle() {
       title={label}
     >
       {isDark ? <SunIcon /> : <MoonIcon />}
+      {showLabel && <span>{isDark ? 'Light mode' : 'Dark mode'}</span>}
     </button>
   );
 }

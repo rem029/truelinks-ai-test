@@ -6,6 +6,7 @@ import {
   parseFieldValue,
 } from '../../utils/formatters.ts';
 import { getDocumentFileUrl } from '../../utils/api.ts';
+import { UnitSelect } from '../UnitSelect.tsx';
 
 export interface FieldCardViewProps {
   card: FieldCard;
@@ -152,7 +153,9 @@ export function FieldCardView({
 
       {isEditing ? (
         <form onSubmit={handleSaveEdit} style={{ display: 'flex', gap: '0.5rem', marginTop: '0.25rem' }}>
-          {isBooleanField ? (
+          {card.fieldPath === 'unit.unitId' ? (
+            <UnitSelect value={editValue} onChange={setEditValue} disabled={submitting !== null} />
+          ) : isBooleanField ? (
             <select
               value={editValue}
               onChange={(e) => setEditValue(e.target.value)}

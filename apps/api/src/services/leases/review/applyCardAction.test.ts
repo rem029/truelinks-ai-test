@@ -199,6 +199,21 @@ describe('applyCardAction and confirmLease', () => {
     expect(result.messages[0]?.text).toBe('Unit is MC-B-0902');
   });
 
+  it('editing the unit ID only accepts one of the owner\'s units', async () => {
+    const { conversation } = await uploadSampleLease('lease-02-problems-MC-B-0902.pdf');
+
+    await expect(
+      applyCardAction(conversation.id, { type: 'edit', cardId: 'field:unit.unitId', value: 'MC-B-12O4' }, { repositories })
+    ).rejects.toMatchObject({ status: 400, message: 'MC-B-12O4 is not one of your units' });
+
+    const result = await applyCardAction(
+      conversation.id,
+      { type: 'edit', cardId: 'field:unit.unitId', value: 'MC-B-0902' },
+      { repositories }
+    );
+    expect(result.lease.unitId).toBe('MC-B-0902');
+  });
+
   it('confirm with pending items throws 409 listing them', async () => {
     const { conversation } = await uploadSampleLease('lease-01-clean-MC-B-1204.pdf');
 

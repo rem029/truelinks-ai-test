@@ -9,6 +9,8 @@ export interface IssueReportFormData {
 
 export interface IssueReportFormProps {
   onSubmit: (data: IssueReportFormData) => Promise<void>;
+  // Set when adding photos to an existing report, e.g. after the agent asked for a clearer one
+  title?: string;
 }
 
 interface PhotoItem {
@@ -17,7 +19,7 @@ interface PhotoItem {
   previewUrl: string;
 }
 
-export function IssueReportForm({ onSubmit }: IssueReportFormProps) {
+export function IssueReportForm({ onSubmit, title = 'Report an issue' }: IssueReportFormProps) {
   const [reporterRole, setReporterRole] = useState<ReporterRole>('tenant');
   const [note, setNote] = useState('');
   const [photos, setPhotos] = useState<PhotoItem[]>([]);
@@ -120,7 +122,7 @@ export function IssueReportForm({ onSubmit }: IssueReportFormProps) {
 
   return (
     <div className="issue-report-form-container">
-      <h2>Report an issue</h2>
+      <h2>{title}</h2>
       <p className="issue-report-subtitle">
         Upload 1 to 6 photos of the issue. The AI model analyzes each photo to identify condition,
         visible equipment, and damages.
@@ -239,7 +241,7 @@ export function IssueReportForm({ onSubmit }: IssueReportFormProps) {
             disabled={submitting || photos.length === 0}
           >
             {submitting
-              ? `Looking at ${photos.length} ${photos.length === 1 ? 'photo' : 'photos'}… ${workingSeconds}s`
+              ? `Looking at ${photos.length === 1 ? 'the photo' : 'the photos'} and drafting a work order… ${workingSeconds}s`
               : `Submit report (${photos.length} ${photos.length === 1 ? 'photo' : 'photos'})`}
           </button>
         </div>

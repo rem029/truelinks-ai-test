@@ -5,6 +5,17 @@ export interface PhotoConditionSummaryInput {
   damages?: string[];
 }
 
+// The reply is a one-line overview; the condition card lists every damage in full
+const MAX_DAMAGES = 3;
+const MAX_DAMAGE_LENGTH = 60;
+
+export function shortenDamage(damage: string): string {
+  if (damage.length <= MAX_DAMAGE_LENGTH) return damage;
+  const cut = damage.slice(0, MAX_DAMAGE_LENGTH);
+  const lastSpace = cut.lastIndexOf(' ');
+  return `${(lastSpace > 0 ? cut.slice(0, lastSpace) : cut).replace(/[\s,;:.]+$/, '')}…`;
+}
+
 const CONDITION_ORDER: readonly IssueCondition[] = ['damaged', 'worn', 'good', 'new', 'undeterminable'];
 
 export function countConditions(photos: PhotoConditionSummaryInput[]): Record<IssueCondition, number> {
@@ -67,7 +78,9 @@ export function buildIssueSummaryText(photos: PhotoConditionSummaryInput[]): str
   const damages = dedupeDamages(photos);
 
   if (damages.length > 0) {
-    const sample = damages.slice(0, 5).join(', ');
+    const shown = damages.slice(0, MAX_DAMAGES).map(shortenDamage);
+    const more = damages.length - shown.length;
+    const sample = more > 0 ? `${shown.join(', ')} and ${more} more` : shown.join(', ');
     return `${overview} Seen: ${sample}. Drafting a work order comes next.`;
   }
 
