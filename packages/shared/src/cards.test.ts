@@ -9,6 +9,33 @@ describe('Card union and ALLOWED_ACTIONS', () => {
     expect(ALLOWED_ACTIONS.unitMatch).toEqual(['choose']);
     expect(ALLOWED_ACTIONS.workOrder).toEqual(['accept', 'reject', 'edit']);
     expect(ALLOWED_ACTIONS.summary).toEqual(['confirm', 'acceptAll']);
+    expect(ALLOWED_ACTIONS.condition).toEqual([]);
+  });
+
+  it('parses a valid condition card', () => {
+    const card = {
+      id: 'condition',
+      type: 'condition',
+      photos: [
+        {
+          id: 'photo-1',
+          filename: 'issue-01-ac-leak-1.jpg',
+          mimeType: 'image/jpeg',
+          condition: 'damaged',
+          damages: ['water stain'],
+          equipment: ['split AC'],
+          note: '',
+        },
+      ],
+    };
+
+    const parsed = Card.parse(card);
+    expect(parsed.type).toBe('condition');
+    if (parsed.type === 'condition') {
+      expect(parsed.photos).toHaveLength(1);
+      expect(parsed.photos[0]?.condition).toBe('damaged');
+      expect(ALLOWED_ACTIONS[parsed.type]).toEqual([]);
+    }
   });
 
   it('parses a valid field card', () => {
@@ -85,6 +112,59 @@ describe('Card union and ALLOWED_ACTIONS', () => {
 
     const parsed = Card.parse(card);
     expect(parsed.type).toBe('workOrder');
+  });
+
+  it('parses a valid summary card with acceptAllCount', () => {
+    const card = {
+      id: 'card-summary',
+      type: 'summary',
+      title: 'Lease review',
+      lines: ['18/20 fields found'],
+      acceptAllCount: 17,
+    };
+
+    const parsed = Card.parse(card);
+    expect(parsed.type).toBe('summary');
+    if (parsed.type === 'summary') {
+      expect(parsed.acceptAllCount).toBe(17);
+    }
+  });
+
+  it('parses an older summary card without acceptAllCount', () => {
+    const card = {
+      id: 'card-summary-old',
+      type: 'summary',
+      title: 'Lease review',
+      lines: ['18/20 fields found'],
+    };
+
+    const parsed = Card.parse(card);
+    expect(parsed.type).toBe('summary');
+    if (parsed.type === 'summary') {
+      expect(parsed.acceptAllCount).toBeUndefined();
+    }
+  });
+
+  it('rejects summary card with negative or non-integer acceptAllCount', () => {
+    expect(() =>
+      Card.parse({
+        id: 'card-summary-neg',
+        type: 'summary',
+        title: 'Lease review',
+        lines: [],
+        acceptAllCount: -1,
+      })
+    ).toThrow();
+
+    expect(() =>
+      Card.parse({
+        id: 'card-summary-float',
+        type: 'summary',
+        title: 'Lease review',
+        lines: [],
+        acceptAllCount: 1.5,
+      })
+    ).toThrow();
   });
 
   it('rejects card with invalid discriminator type', () => {

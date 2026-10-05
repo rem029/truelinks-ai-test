@@ -4,15 +4,17 @@ import { Severity } from './severity.ts';
 export const ReporterRole = z.enum(['tenant', 'inspector']);
 export type ReporterRole = z.infer<typeof ReporterRole>;
 
-export const IssueCondition = z.enum(['new', 'worn', 'damaged', 'undeterminable']);
+export const IssueCondition = z.enum(['new', 'good', 'worn', 'damaged', 'undeterminable']);
 export type IssueCondition = z.infer<typeof IssueCondition>;
 
 export const IssuePhoto = z.object({
   id: z.string(),
   filename: z.string(),
+  mimeType: z.string(),
   condition: IssueCondition,
   damages: z.array(z.string()),
   equipment: z.array(z.string()),
+  note: z.string(),
 });
 export type IssuePhoto = z.infer<typeof IssuePhoto>;
 

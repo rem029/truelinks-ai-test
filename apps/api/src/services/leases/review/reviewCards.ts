@@ -68,7 +68,7 @@ export function buildReviewCards(lease: Lease, unitMatch: UnitMatch): Card[] {
   }
 
   if (fineCount > 0) {
-    summaryLines.push(`${fineCount} fields look fine — Accept all`);
+    summaryLines.push(fineCount === 1 ? '1 field looks fine' : `${fineCount} fields look fine`);
   }
 
   cards.push({
@@ -76,6 +76,7 @@ export function buildReviewCards(lease: Lease, unitMatch: UnitMatch): Card[] {
     type: 'summary',
     title: 'Lease review',
     lines: summaryLines,
+    acceptAllCount: fineCount,
   });
 
   // Items needing attention:

@@ -13,14 +13,13 @@ import {
 import { navigate } from '../utils/router.ts';
 import { MessageItem } from '../components/thread/MessageItem.tsx';
 import { UploadDropZone } from '../components/thread/UploadDropZone.tsx';
-import { AllFieldsPanel } from '../components/thread/AllFieldsPanel.tsx';
 import { ConfirmBar } from '../components/thread/ConfirmBar.tsx';
 import { Composer } from '../components/thread/Composer.tsx';
-import type { FieldPath } from '../utils/leaseFields.ts';
 import { formatElapsedSeconds } from '../utils/formatters.ts';
 
 export interface LeaseThreadPageProps {
   conversationId: string;
+  initialData?: ConversationDetails;
 }
 
 interface ActionErrorInfo {
@@ -29,9 +28,9 @@ interface ActionErrorInfo {
   failures?: string[];
 }
 
-export function LeaseThreadPage({ conversationId }: LeaseThreadPageProps) {
-  const [data, setData] = useState<ConversationDetails | null>(null);
-  const [loading, setLoading] = useState(true);
+export function LeaseThreadPage({ conversationId, initialData }: LeaseThreadPageProps) {
+  const [data, setData] = useState<ConversationDetails | null>(initialData ?? null);
+  const [loading, setLoading] = useState(!initialData);
   const [pageError, setPageError] = useState<string | null>(null);
 
   const [uploading, setUploading] = useState(false);
@@ -57,6 +56,7 @@ export function LeaseThreadPage({ conversationId }: LeaseThreadPageProps) {
   }, [conversationId]);
 
   useEffect(() => {
+    if (initialData) return;
     let active = true;
     setLoading(true);
     setPageError(null);
@@ -78,7 +78,7 @@ export function LeaseThreadPage({ conversationId }: LeaseThreadPageProps) {
     return () => {
       active = false;
     };
-  }, [conversationId]);
+  }, [conversationId, initialData]);
 
   // Poll every 3 seconds while analysisStatus === 'pending'
   useEffect(() => {
@@ -189,14 +189,6 @@ export function LeaseThreadPage({ conversationId }: LeaseThreadPageProps) {
       setPendingUserText(null);
       setIsSendingMessage(false);
     }
-  }
-
-  async function handleEditField(fieldPath: FieldPath, value: unknown) {
-    await handleAction({
-      type: 'edit',
-      cardId: `field:${fieldPath}`,
-      value,
-    });
   }
 
   async function handleConfirm(overrideReason?: string) {
@@ -314,12 +306,6 @@ export function LeaseThreadPage({ conversationId }: LeaseThreadPageProps) {
                   <span>Agent is working… {formatElapsedSeconds(workingSeconds)}</span>
                 </div>
               )}
-
-              <AllFieldsPanel
-                lease={lease}
-                onEditField={handleEditField}
-                disabled={isConfirmed || isBusy}
-              />
             </>
           )}
         </div>

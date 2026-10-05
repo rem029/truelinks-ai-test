@@ -8,6 +8,7 @@ import type { Database, IssuesTable, WorkOrdersTable } from '../schema.ts';
 export interface IssueRepository {
   createIssue(issue: Issue): Promise<Issue>;
   getIssue(id: string): Promise<Issue | null>;
+  getByConversation(conversationId: string): Promise<Issue | null>;
   listByUnit(unitId: string): Promise<Issue[]>;
   createWorkOrder(workOrder: WorkOrder): Promise<WorkOrder>;
   getWorkOrder(id: string): Promise<WorkOrder | null>;
@@ -63,6 +64,15 @@ export function createIssueRepository(db: Kysely<Database>): IssueRepository {
 
     async getIssue(id: string): Promise<Issue | null> {
       const row = await db.selectFrom('issues').selectAll().where('id', '=', id).executeTakeFirst();
+      return row ? issueToDomain(row) : null;
+    },
+
+    async getByConversation(conversationId: string): Promise<Issue | null> {
+      const row = await db
+        .selectFrom('issues')
+        .selectAll()
+        .where('conversation_id', '=', conversationId)
+        .executeTakeFirst();
       return row ? issueToDomain(row) : null;
     },
 

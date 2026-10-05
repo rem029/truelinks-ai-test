@@ -1,8 +1,8 @@
 import { describe, it, expect } from 'vitest';
-import { Card, type Lease } from '@truelinks/shared';
+import { Card, type Lease, type SummaryCard } from '@truelinks/shared';
 import { sampleLeaseRecords } from '../sampleLeaseRecords.ts';
 import type { UnitMatch } from '../unitMatch.ts';
-import { editField } from './patchRecord.ts';
+import { acceptAllFields, editField } from './patchRecord.ts';
 import { buildReviewCards, describeChanges, parseCardId } from './reviewCards.ts';
 
 const LEASE_02_RECORD = sampleLeaseRecords['lease-02-problems-MC-B-0902.pdf']!;
@@ -128,7 +128,8 @@ describe('reviewCards', () => {
         expect(cards[0].lines).toContain('Rules: 1 pass / 1 fail / 1 not determinable');
         expect(cards[0].lines).toContain('1 open flag');
         expect(cards[0].lines).toContain('Full review still running');
-        expect(cards[0].lines).toContain('17 fields look fine — Accept all');
+        expect(cards[0].lines).toContain('17 fields look fine');
+        expect(cards[0].acceptAllCount).toBe(17);
       }
 
       // Second card is unitMatch because unconfirmed
@@ -232,6 +233,85 @@ describe('reviewCards', () => {
       expect(cards.some((c) => c.id === 'flag:MODEL_CONCERN:renewal')).toBe(true);
       expect(cards.some((c) => c.id === 'field:renewal')).toBe(true);
       expect(cards.some((c) => c.id === 'field:rent.amount')).toBe(false);
+    });
+
+    it('sets acceptAllCount matching acceptAllFields acceptedPaths length for a lease with open flag', () => {
+      const openFlags = [
+        {
+          id: 'VALUE_CONFLICT:rent.amount',
+          code: 'VALUE_CONFLICT' as const,
+          severity: 'high' as const,
+          message: 'Rent conflict: clause 2 says 8,500, clause 5 says 8,000',
+          fieldPaths: ['rent.amount'],
+          clauseIds: ['2', '5'],
+          reviewStatus: 'open' as const,
+        },
+      ];
+      const lease = createLease({
+        record: LEASE_05_RECORD,
+        flags: openFlags,
+      });
+      const unitMatch: UnitMatch = {
+        status: 'matched',
+        unit: {
+          unitId: 'MC-B-1204',
+          label: 'Apartment 1204',
+          type: '2BR',
+          areaSqm: 118,
+          parkingBay: 'B-77',
+          status: 'available',
+          buildingId: 'MC-B',
+          buildingName: 'Tower B',
+          propertyId: 'PROP-MC',
+          propertyName: 'Marina Crest Residences',
+        },
+      };
+
+      const cards = buildReviewCards(lease, unitMatch);
+      const summaryCard = cards.find((c): c is SummaryCard => c.type === 'summary');
+      expect(summaryCard).toBeDefined();
+
+      const { acceptedPaths } = acceptAllFields(lease.record, openFlags, NOW);
+      expect(summaryCard?.acceptAllCount).toBe(acceptedPaths.length);
+    });
+
+    it('pluralises "1 field looks fine" when fineCount is 1', () => {
+      const { record: allAcceptedRecord } = acceptAllFields(LEASE_05_RECORD, [], NOW);
+      const recordWithOnePending = {
+        ...allAcceptedRecord,
+        tenant: {
+          ...allAcceptedRecord.tenant,
+          name: {
+            ...allAcceptedRecord.tenant.name,
+            review: { status: 'pending' as const },
+          },
+        },
+      };
+      const lease = createLease({
+        record: recordWithOnePending,
+        flags: [],
+      });
+      const unitMatch: UnitMatch = {
+        status: 'matched',
+        unit: {
+          unitId: 'MC-B-1204',
+          label: 'Apartment 1204',
+          type: '2BR',
+          areaSqm: 118,
+          parkingBay: 'B-77',
+          status: 'available',
+          buildingId: 'MC-B',
+          buildingName: 'Tower B',
+          propertyId: 'PROP-MC',
+          propertyName: 'Marina Crest Residences',
+        },
+      };
+
+      const cards = buildReviewCards(lease, unitMatch);
+      const summaryCard = cards.find((c): c is SummaryCard => c.type === 'summary');
+      expect(summaryCard?.acceptAllCount).toBe(1);
+      expect(summaryCard?.lines).toContain('1 field looks fine');
+      expect(summaryCard?.lines.some((l) => l.includes('fields look fine'))).toBe(false);
     });
   });
 

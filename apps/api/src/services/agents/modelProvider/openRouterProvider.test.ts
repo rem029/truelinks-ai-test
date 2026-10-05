@@ -303,6 +303,7 @@ describe('openRouterProvider', () => {
     });
 
     it('throws clear error when validation fails after retry', async () => {
+      const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
       const badCompletion: OpenAI.ChatCompletion = {
         id: 'comp_bad',
         created: Date.now(),
@@ -345,6 +346,14 @@ describe('openRouterProvider', () => {
       ).rejects.toThrow("Validation failed for purpose 'test-failure' after retry");
 
       expect(mockCreate).toHaveBeenCalledTimes(2);
+      expect(consoleSpy).toHaveBeenCalledWith(
+        expect.stringMatching(/^model test-failure test-model 10\/5 tok \d+ms retry reason=/)
+      );
+      expect(consoleSpy).toHaveBeenCalledWith(
+        expect.stringMatching(/^model test-failure test-model 10\/5 tok \d+ms error reason=/)
+      );
+
+      consoleSpy.mockRestore();
     });
 
     it('re-throws when OpenAI client encounters a network/API error', async () => {

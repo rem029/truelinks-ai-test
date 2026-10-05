@@ -9,6 +9,8 @@ import {
   HealthResponse,
   Unit,
   ConversationSummary,
+  type ReporterRole,
+  ReportIssueResponse,
 } from '@truelinks/shared';
 
 export class ApiError extends Error {
@@ -133,5 +135,32 @@ export async function listConversations(kind?: ConversationKind): Promise<Conver
   const query = kind ? `?kind=${encodeURIComponent(kind)}` : '';
   return request(`/api/conversations${query}`, undefined, z.array(ConversationSummary));
 }
+
+export async function reportIssue(
+  conversationId: string,
+  data: { reporterRole: ReporterRole; note?: string; photos: File[] }
+): Promise<ReportIssueResponse> {
+  const formData = new FormData();
+  formData.append('reporterRole', data.reporterRole);
+  if (data.note) {
+    formData.append('note', data.note);
+  }
+  for (const photo of data.photos) {
+    formData.append('photos', photo);
+  }
+  return request(
+    `/api/conversations/${encodeURIComponent(conversationId)}/issue-report`,
+    {
+      method: 'POST',
+      body: formData,
+    },
+    ReportIssueResponse
+  );
+}
+
+export function getIssuePhotoUrl(conversationId: string, photoId: string): string {
+  return `/api/conversations/${encodeURIComponent(conversationId)}/photos/${encodeURIComponent(photoId)}`;
+}
+
 
 

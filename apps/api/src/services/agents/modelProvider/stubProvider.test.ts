@@ -6,7 +6,8 @@ describe('stubProvider', () => {
   const provider = createStubProvider();
 
   it('handles photo-analysis with known and unknown photos', async () => {
-    const res = await provider.complete({
+    // Known photo 1
+    const res1 = await provider.complete({
       purpose: 'photo-analysis',
       messages: [],
       images: [
@@ -15,30 +16,13 @@ describe('stubProvider', () => {
           mimeType: 'image/jpeg',
           data: Buffer.from(''),
         },
-        {
-          filename: 'issue-01-ac-leak-1.jpg',
-          mimeType: 'image/jpeg',
-          data: Buffer.from(''),
-        },
-        {
-          filename: 'unknown-photo.jpg',
-          mimeType: 'image/jpeg',
-          data: Buffer.from(''),
-        },
       ],
     });
 
-    expect(res.model).toBe('stub');
-    expect(res.toolCalls).toHaveLength(0);
-
-    const output = res.output as {
-      photos: Array<{ filename: string; condition: string; equipment: string[]; damages: string[] }>;
-    };
-    expect(output.photos).toHaveLength(3);
-
-    // Known photo 1
-    expect(output.photos[0]).toEqual({
-      filename: 'issue-04-move-in-ok-1.jpg',
+    expect(res1.model).toBe('stub');
+    expect(res1.toolCalls).toHaveLength(0);
+    const output1 = res1.output as { condition: string; equipment: string[]; damages: string[]; note: string };
+    expect(output1).toEqual({
       condition: 'new',
       damages: [],
       equipment: [
@@ -48,29 +32,52 @@ describe('stubProvider', () => {
         'smoke detector',
         'power sockets',
       ],
+      note: '',
     });
 
     // Known photo 2
-    expect(output.photos[1]?.condition).toBe('damaged');
-    expect(output.photos[1]?.damages).toContain('brown water stain down wall below AC');
+    const res2 = await provider.complete({
+      purpose: 'photo-analysis',
+      messages: [],
+      images: [
+        {
+          filename: 'issue-01-ac-leak-1.jpg',
+          mimeType: 'image/jpeg',
+          data: Buffer.from(''),
+        },
+      ],
+    });
+    const output2 = res2.output as { condition: string; equipment: string[]; damages: string[]; note: string };
+    expect(output2.condition).toBe('damaged');
+    expect(output2.damages).toContain('brown water stain down wall below AC');
 
     // Unknown photo
-    expect(output.photos[2]).toEqual({
-      filename: 'unknown-photo.jpg',
+    const res3 = await provider.complete({
+      purpose: 'photo-analysis',
+      messages: [],
+      images: [
+        {
+          filename: 'unknown-photo.jpg',
+          mimeType: 'image/jpeg',
+          data: Buffer.from(''),
+        },
+      ],
+    });
+    const output3 = res3.output as { condition: string; equipment: string[]; damages: string[]; note: string };
+    expect(output3).toEqual({
       condition: 'undeterminable',
-      equipment: [],
       damages: [],
+      equipment: [],
+      note: 'stub: no fixture for this photo',
     });
   });
 
   it('validates photo-analysis against responseSchema and throws on mismatch', async () => {
     const strictSchema = z.object({
-      photos: z.array(
-        z.object({
-          filename: z.string(),
-          condition: z.literal('nonexistent_condition'),
-        })
-      ),
+      condition: z.literal('nonexistent_condition'),
+      damages: z.array(z.string()),
+      equipment: z.array(z.string()),
+      note: z.string(),
     });
 
     await expect(

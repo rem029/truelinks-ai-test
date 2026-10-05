@@ -24,6 +24,7 @@ export async function getConversation(
   const messages = await repositories.conversations.listMessages(id);
   const documents = await repositories.documents.listByConversation(id);
   const lease = await repositories.leases.getByConversation(id);
+  const issue = await repositories.issues.getByConversation(id);
 
   const review: ConversationReview | null = lease
     ? {
@@ -32,6 +33,6 @@ export async function getConversation(
       }
     : null;
 
-  return { conversation, messages, documents, lease, review };
+  return { conversation, messages, documents, lease, review, issue };
 }
 

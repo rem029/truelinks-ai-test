@@ -258,7 +258,7 @@ export function createOpenRouterProvider(options: OpenRouterProviderOptions): Mo
         }
 
         if (attempt < maxAttempts) {
-          console.log(`model ${req.purpose} ${model} ${inTok}/${outTok} tok ${ms}ms retry`);
+          console.log(`model ${req.purpose} ${model} ${inTok}/${outTok} tok ${ms}ms retry reason=${parsed.error.slice(0, 200)}`);
           currentMessages = [
             ...currentMessages,
             { role: 'assistant', content: text ?? '' },
@@ -268,7 +268,7 @@ export function createOpenRouterProvider(options: OpenRouterProviderOptions): Mo
             },
           ];
         } else {
-          console.log(`model ${req.purpose} ${model} ${inTok}/${outTok} tok ${ms}ms error`);
+          console.log(`model ${req.purpose} ${model} ${inTok}/${outTok} tok ${ms}ms error reason=${parsed.error.slice(0, 200)}`);
           throw new Error(
             `Validation failed for purpose '${req.purpose}' after retry: ${parsed.error}`
           );

@@ -3,6 +3,7 @@ import { Card } from './cards.ts';
 import { RuleResult } from './rules.ts';
 import { Lease, LeaseStatus, LeaseAnalysisStatus } from './lease.ts';
 import { LeaseDocument } from './leaseDocument.ts';
+import { Issue } from './issue.ts';
 
 export const ConversationKind = z.enum(['lease', 'issue']);
 export type ConversationKind = z.infer<typeof ConversationKind>;
@@ -73,6 +74,7 @@ export const ConversationDetails = z.object({
   documents: z.array(LeaseDocument),
   lease: Lease.nullable(),
   review: ConversationReview.nullable(),
+  issue: Issue.nullable(),
 });
 export type ConversationDetails = z.infer<typeof ConversationDetails>;
 
@@ -90,6 +92,12 @@ export const ConversationActionResponse = z.object({
 });
 export type ConversationActionResponse = z.infer<typeof ConversationActionResponse>;
 
+export const ReportIssueResponse = z.object({
+  issue: Issue,
+  messages: z.array(Message),
+});
+export type ReportIssueResponse = z.infer<typeof ReportIssueResponse>;
+
 export const ConversationSummary = z.object({
   id: z.string(),
   kind: ConversationKind,
@@ -99,6 +107,7 @@ export const ConversationSummary = z.object({
   leaseStatus: LeaseStatus.nullable(),
   analysisStatus: LeaseAnalysisStatus.nullable(),
   openItems: z.number().int().nonnegative().nullable(),
+  photoCount: z.number().int().nonnegative().nullable(),
   createdAt: z.iso.datetime({ offset: true }),
   updatedAt: z.iso.datetime({ offset: true }),
 });

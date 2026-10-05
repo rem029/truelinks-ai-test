@@ -17,6 +17,28 @@ export async function listConversations(
   const summaries: ConversationSummary[] = [];
 
   for (const conv of conversations) {
+    if (conv.kind === 'issue') {
+      const issue = await repositories.issues.getByConversation(conv.id);
+      if (!issue) {
+        continue;
+      }
+
+      summaries.push({
+        id: conv.id,
+        kind: conv.kind,
+        status: conv.status,
+        unitId: issue.unitId ?? conv.unitId,
+        filename: null,
+        leaseStatus: null,
+        analysisStatus: null,
+        openItems: null,
+        photoCount: issue.photos.length,
+        createdAt: conv.createdAt,
+        updatedAt: conv.updatedAt,
+      });
+      continue;
+    }
+
     const docs = await repositories.documents.listByConversation(conv.id);
     if (docs.length === 0) {
       continue;
@@ -32,6 +54,7 @@ export async function listConversations(
       leaseStatus: lease?.status ?? null,
       analysisStatus: lease?.analysisStatus ?? null,
       openItems: lease ? listPendingItems(lease).length : null,
+      photoCount: null,
       createdAt: conv.createdAt,
       updatedAt: conv.updatedAt,
     });

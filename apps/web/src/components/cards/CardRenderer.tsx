@@ -5,6 +5,7 @@ import { FlagCardView } from './FlagCardView.tsx';
 import { RuleCardView } from './RuleCardView.tsx';
 import { FieldCardView } from './FieldCardView.tsx';
 import { WorkOrderCardView } from './WorkOrderCardView.tsx';
+import { ConditionCardView } from './ConditionCardView.tsx';
 import { isFieldPath, getFieldFromRecord } from '../../utils/leaseFields.ts';
 
 export interface CardRendererProps {
@@ -13,6 +14,7 @@ export interface CardRendererProps {
   lease: Lease | null;
   documents: LeaseDocument[];
   onAction: (action: Action) => Promise<void>;
+  conversationId?: string;
 }
 
 export function CardRenderer({
@@ -21,6 +23,7 @@ export function CardRenderer({
   lease,
   documents,
   onAction,
+  conversationId,
 }: CardRendererProps) {
   switch (card.type) {
     case 'summary':
@@ -28,6 +31,7 @@ export function CardRenderer({
         <SummaryCardView
           card={card}
           isInteractive={isInteractive}
+          lease={isInteractive ? lease : null}
           onAction={onAction}
         />
       );
@@ -78,6 +82,14 @@ export function CardRenderer({
 
     case 'workOrder':
       return <WorkOrderCardView card={card} />;
+
+    case 'condition':
+      return (
+        <ConditionCardView
+          card={card}
+          conversationId={conversationId ?? ''}
+        />
+      );
 
     default: {
       const exhaustiveCheck: never = card;

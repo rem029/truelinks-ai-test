@@ -266,9 +266,11 @@ describe('Repositories round-trip with JSON column boundary parsing', () => {
         {
           id: 'photo-1',
           filename: 'issue-01-ac-leak-1.jpg',
+          mimeType: 'image/jpeg',
           condition: 'damaged',
           damages: ['water stain down wall'],
           equipment: ['split AC (wall-mounted)'],
+          note: '',
         },
       ],
       createdAt: '2026-10-04T14:00:00.000Z',
@@ -277,6 +279,9 @@ describe('Repositories round-trip with JSON column boundary parsing', () => {
     await repos.issues.createIssue(issue);
     const fetchedIssue = await repos.issues.getIssue('iss-1');
     expect(fetchedIssue).toEqual(issue);
+
+    const fetchedByConv = await repos.issues.getByConversation('conv-303');
+    expect(fetchedByConv).toEqual(issue);
 
     const issuesByUnit = await repos.issues.listByUnit('MC-B-1204');
     expect(issuesByUnit).toHaveLength(1);

@@ -15,6 +15,7 @@ import {
   ConversationDetails,
   ConversationReview,
   ConversationSummary,
+  ReportIssueResponse,
 } from '@truelinks/shared';
 import { createApp } from './app.ts';
 import { createDb } from './services/db/db.ts';
@@ -466,6 +467,87 @@ describe('API', () => {
     const assistantMsg = Message.parse(json.messages[1]);
     expect(assistantMsg.role).toBe('assistant');
     expect(assistantMsg.agentRun).not.toBeNull();
+  });
+
+  it('POST /api/conversations/:id/issue-report and GET /api/conversations/:id/photos/:photoId', async () => {
+    // 1. Create an issue conversation
+    const convRes = await fetch(`${baseUrl}/api/conversations`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ kind: 'issue', unitId: 'MC-B-1204' }),
+    });
+    expect(convRes.status).toBe(201);
+    const conv = Conversation.parse(await convRes.json());
+
+    // 2. Submit issue report multipart
+    const photoPath = resolve(import.meta.dirname, '../../../data/sample-photos/issue-01-ac-leak-1.jpg');
+    const photoBuffer = readFileSync(photoPath);
+
+    const formData = new FormData();
+    formData.append('reporterRole', 'tenant');
+    formData.append('note', 'AC unit is leaking water');
+    formData.append('photos', new Blob([photoBuffer], { type: 'image/jpeg' }), 'issue-01-ac-leak-1.jpg');
+
+    const reportRes = await fetch(`${baseUrl}/api/conversations/${conv.id}/issue-report`, {
+      method: 'POST',
+      body: formData,
+    });
+    expect(reportRes.status).toBe(201);
+    const reportData = ReportIssueResponse.parse(await reportRes.json());
+    expect(reportData.issue.photos).toHaveLength(1);
+    const photoId = reportData.issue.photos[0]?.id;
+    expect(photoId).toBeDefined();
+
+    // 3. GET photo file returns 200 with image/jpeg
+    const photoRes = await fetch(`${baseUrl}/api/conversations/${conv.id}/photos/${photoId}`);
+    expect(photoRes.status).toBe(200);
+    expect(photoRes.headers.get('content-type')).toContain('image/jpeg');
+    const fetchedBytes = Buffer.from(await photoRes.arrayBuffer());
+    expect(fetchedBytes).toEqual(photoBuffer);
+
+    // 4. GET photo returns 404 for missing photo
+    const missingPhotoRes = await fetch(`${baseUrl}/api/conversations/${conv.id}/photos/non-existent-photo`);
+    expect(missingPhotoRes.status).toBe(404);
+
+    // 5. GET photo returns 404 for missing conversation
+    const missingConvPhotoRes = await fetch(`${baseUrl}/api/conversations/non-existent-conv/photos/${photoId}`);
+    expect(missingConvPhotoRes.status).toBe(404);
+  });
+
+  it('GET /api/conversations/:id/photos/:photoId returns 404 for an unknown conversation and for an unknown photoId on an existing issue', async () => {
+    // 1. Create an issue conversation and submit an issue report with a photo
+    const convRes = await fetch(`${baseUrl}/api/conversations`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ kind: 'issue', unitId: 'MC-B-1204' }),
+    });
+    expect(convRes.status).toBe(201);
+    const conv = Conversation.parse(await convRes.json());
+
+    const photoPath = resolve(import.meta.dirname, '../../../data/sample-photos/issue-01-ac-leak-1.jpg');
+    const photoBuffer = readFileSync(photoPath);
+
+    const formData = new FormData();
+    formData.append('reporterRole', 'tenant');
+    formData.append('note', 'AC leak');
+    formData.append('photos', new Blob([photoBuffer], { type: 'image/jpeg' }), 'photo.jpg');
+
+    const reportRes = await fetch(`${baseUrl}/api/conversations/${conv.id}/issue-report`, {
+      method: 'POST',
+      body: formData,
+    });
+    expect(reportRes.status).toBe(201);
+    const reportData = ReportIssueResponse.parse(await reportRes.json());
+    const validPhotoId = reportData.issue.photos[0]?.id;
+    expect(validPhotoId).toBeDefined();
+
+    // 2. Returns 404 for an unknown conversation
+    const unknownConvRes = await fetch(`${baseUrl}/api/conversations/unknown-conv-id/photos/${validPhotoId}`);
+    expect(unknownConvRes.status).toBe(404);
+
+    // 3. Returns 404 for an unknown photoId on an existing issue
+    const unknownPhotoRes = await fetch(`${baseUrl}/api/conversations/${conv.id}/photos/unknown-photo-id`);
+    expect(unknownPhotoRes.status).toBe(404);
   });
 });
 

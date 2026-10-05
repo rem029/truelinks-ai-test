@@ -47,25 +47,27 @@ function photoAnalysis<T>(
   req: CompletionRequest<T>,
   photoMap: Map<string, ExpectedPhotoEntry>
 ): CompletionResult<T> {
-  const photos = (req.images ?? []).map((img) => {
-    const known = photoMap.get(img.filename);
-    if (known) {
-      return {
-        filename: img.filename,
-        condition: known.condition,
-        equipment: [...known.equipment],
-        damages: [...known.damages],
-      };
-    }
-    return {
-      filename: img.filename,
-      condition: 'undeterminable',
-      equipment: [],
-      damages: [],
-    };
-  });
+  const img = req.images?.[0];
+  const filename = img?.filename ?? '';
+  const known = photoMap.get(filename);
 
-  let output: unknown = { photos };
+  let output: unknown;
+  if (known) {
+    output = {
+      condition: known.condition,
+      damages: [...known.damages],
+      equipment: [...known.equipment],
+      note: '',
+    };
+  } else {
+    output = {
+      condition: 'undeterminable',
+      damages: [],
+      equipment: [],
+      note: 'stub: no fixture for this photo',
+    };
+  }
+
   if (req.responseSchema) {
     const validation = req.responseSchema.safeParse(output);
     if (!validation.success) {
