@@ -119,6 +119,7 @@ describe('Repositories round-trip with JSON column boundary parsing', () => {
           mimeType: 'application/pdf',
         },
       ],
+      agentRun: null,
       createdAt: '2026-10-04T12:01:00.000Z',
     };
 
@@ -375,6 +376,29 @@ describe('Repositories round-trip with JSON column boundary parsing', () => {
 
     const emptyList = await repos.documents.listByConversation('conv-other');
     expect(emptyList).toEqual([]);
+  });
+
+  it('Repositories.transaction: rolls back writes if an error is thrown', async () => {
+    const unitBefore = await repos.units.get('MC-B-1204');
+    expect(unitBefore?.status).toBe('available');
+
+    await expect(
+      repos.transaction(async (trx) => {
+        await trx.units.setStatus('MC-B-1204', 'occupied');
+        throw new Error('Transaction rollback triggered');
+      })
+    ).rejects.toThrow('Transaction rollback triggered');
+
+    const unitAfter = await repos.units.get('MC-B-1204');
+    expect(unitAfter?.status).toBe('available');
+
+    // Successful transaction commits
+    await repos.transaction(async (trx) => {
+      await trx.units.setStatus('MC-B-1204', 'occupied');
+    });
+
+    const unitCommitted = await repos.units.get('MC-B-1204');
+    expect(unitCommitted?.status).toBe('occupied');
   });
 });
 

@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-export const ActionType = z.enum(['accept', 'reject', 'edit', 'choose', 'confirm']);
+export const ActionType = z.enum(['accept', 'reject', 'edit', 'choose', 'confirm', 'acceptAll']);
 export type ActionType = z.infer<typeof ActionType>;
 
 export const AcceptAction = z.object({
@@ -37,11 +37,17 @@ export const ConfirmAction = z.object({
 });
 export type ConfirmAction = z.infer<typeof ConfirmAction>;
 
+export const AcceptAllAction = z.object({
+  type: z.literal('acceptAll'),
+});
+export type AcceptAllAction = z.infer<typeof AcceptAllAction>;
+
 export const Action = z.discriminatedUnion('type', [
   AcceptAction,
   RejectAction,
   EditAction,
   ChooseAction,
   ConfirmAction,
+  AcceptAllAction,
 ]);
 export type Action = z.infer<typeof Action>;

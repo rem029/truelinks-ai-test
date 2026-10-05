@@ -1,13 +1,16 @@
-import type { Conversation, Message, Lease, LeaseDocument } from '@truelinks/shared';
+import type {
+  Conversation,
+  Message,
+  Lease,
+  LeaseDocument,
+  ConversationDetails,
+  ConversationReview,
+} from '@truelinks/shared';
 import type { Repositories } from '../db/repositories/index.ts';
 import { HttpError } from '../../utils/httpError.ts';
+import { listPendingItems, highSeverityFailures } from '../leases/review/pendingItems.ts';
 
-export interface ConversationDetails {
-  conversation: Conversation;
-  messages: Message[];
-  documents: LeaseDocument[];
-  lease: Lease | null;
-}
+export type { ConversationDetails, ConversationReview };
 
 export async function getConversation(
   id: string,
@@ -22,5 +25,13 @@ export async function getConversation(
   const documents = await repositories.documents.listByConversation(id);
   const lease = await repositories.leases.getByConversation(id);
 
-  return { conversation, messages, documents, lease };
+  const review: ConversationReview | null = lease
+    ? {
+        pending: listPendingItems(lease),
+        highSeverityFailures: highSeverityFailures(lease),
+      }
+    : null;
+
+  return { conversation, messages, documents, lease, review };
 }
+

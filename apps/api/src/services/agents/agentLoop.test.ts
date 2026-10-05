@@ -31,7 +31,7 @@ describe('agentLoop', () => {
     expect(updateFieldMock).toHaveBeenCalledTimes(1);
     expect(updateFieldMock).toHaveBeenCalledWith({
       fieldPath: 'rent.amount',
-      value: 8500,
+      value: '8500',
     });
 
     expect(result.askedUser).toBe(false);
@@ -201,7 +201,7 @@ describe('agentLoop', () => {
     });
 
     expect(callCount).toBe(3);
-    expect(result.reply).toContain('Step limit reached (3 steps).');
+    expect(result.reply).toBe("I couldn't finish that in 3 steps; try rephrasing, or use the cards.");
     expect(result.askedUser).toBe(false);
     expect(result.toolCalls).toHaveLength(3);
     expect(consoleSpy).toHaveBeenCalledWith('agent test-loop step limit reached (3)');
@@ -250,5 +250,51 @@ describe('agentLoop', () => {
     expect(result.reply).toContain('Recovered from: Invalid arguments for tool');
     expect(result.toolCalls).toHaveLength(1);
     expect(result.toolCalls[0]?.ok).toBe(false);
+  });
+
+  it('tracks last model and sums input/output tokens over multiple steps', async () => {
+    let callCount = 0;
+    const testProvider: ModelProvider = {
+      name: 'stub',
+      async complete() {
+        callCount++;
+        if (callCount === 1) {
+          return {
+            text: null,
+            toolCalls: [{ id: 'step_1', name: 'dummy_tool', args: {} }],
+            output: null,
+            model: 'model-step-1',
+            usage: { inputTokens: 100, outputTokens: 20 },
+          };
+        }
+        return {
+          text: 'Finished dummy work',
+          toolCalls: [],
+          output: null,
+          model: 'model-step-2',
+          usage: { inputTokens: 150, outputTokens: 30 },
+        };
+      },
+    };
+
+    const dummyTool = defineTool({
+      name: 'dummy_tool',
+      description: 'Dummy tool',
+      args: z.object({}),
+      handler: async () => ({ done: true }),
+    });
+
+    const result = await runAgentTurn({
+      provider: testProvider,
+      purpose: 'test-usage',
+      messages: [{ role: 'user', content: 'do work' }],
+      tools: [dummyTool],
+    });
+
+    expect(result.model).toBe('model-step-2');
+    expect(result.usage).toEqual({
+      inputTokens: 250,
+      outputTokens: 50,
+    });
   });
 });

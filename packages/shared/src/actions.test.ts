@@ -47,6 +47,12 @@ describe('Action union', () => {
     }
   });
 
+  it('parses acceptAll action', () => {
+    const action = { type: 'acceptAll' };
+    const parsed = Action.parse(action);
+    expect(parsed.type).toBe('acceptAll');
+  });
+
   it('rejects action with invalid action type', () => {
     const invalid = { type: 'delete', cardId: 'c-1' };
     expect(() => Action.parse(invalid)).toThrow();

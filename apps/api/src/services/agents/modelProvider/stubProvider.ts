@@ -128,7 +128,7 @@ function leaseCorrection<T>(req: CompletionRequest<T>): CompletionResult<T> {
           {
             id: 'call_update_field',
             name: 'update_field',
-            args: { fieldPath: correction.fieldPath, value: correction.value },
+            args: { fieldPath: correction.fieldPath, value: String(correction.value) },
           },
         ],
       });

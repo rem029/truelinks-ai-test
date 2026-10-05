@@ -18,6 +18,11 @@ export interface AgentTurnResult {
   askedUser: boolean;
   messages: ChatMessage[];
   toolCalls: ToolCallLog[];
+  model: string;
+  usage: {
+    inputTokens: number;
+    outputTokens: number;
+  };
 }
 
 export async function runAgentTurn(options: AgentTurnOptions): Promise<AgentTurnResult> {
@@ -27,12 +32,22 @@ export async function runAgentTurn(options: AgentTurnOptions): Promise<AgentTurn
   const toolSpecs = options.tools ? toToolSpecs(options.tools) : undefined;
   const hasAskUserTool = options.tools ? options.tools.some((t) => t.name === 'ask_user') : false;
 
+  let lastModel = '';
+  let inputTokens = 0;
+  let outputTokens = 0;
+
   for (let step = 0; step < maxSteps; step++) {
     const completion = await options.provider.complete({
       purpose: options.purpose,
       messages: transcript,
       tools: toolSpecs,
     });
+
+    lastModel = completion.model;
+    if (completion.usage) {
+      inputTokens += completion.usage.inputTokens;
+      outputTokens += completion.usage.outputTokens;
+    }
 
     if (completion.toolCalls.length === 0) {
       const reply = completion.text ?? '';
@@ -42,6 +57,8 @@ export async function runAgentTurn(options: AgentTurnOptions): Promise<AgentTurn
         askedUser: false,
         messages: transcript,
         toolCalls: toolCallLogs,
+        model: lastModel,
+        usage: { inputTokens, outputTokens },
       };
     }
 
@@ -103,6 +120,8 @@ export async function runAgentTurn(options: AgentTurnOptions): Promise<AgentTurn
         askedUser: true,
         messages: transcript,
         toolCalls: toolCallLogs,
+        model: lastModel,
+        usage: { inputTokens, outputTokens },
       };
     }
   }
@@ -111,9 +130,11 @@ export async function runAgentTurn(options: AgentTurnOptions): Promise<AgentTurn
 
   // Preserves audit trail and avoids 500 crashes while cleanly communicating the boundary hit to callers
   return {
-    reply: `Step limit reached (${maxSteps} steps).`,
+    reply: `I couldn't finish that in ${maxSteps} steps; try rephrasing, or use the cards.`,
     askedUser: false,
     messages: transcript,
     toolCalls: toolCallLogs,
+    model: lastModel,
+    usage: { inputTokens, outputTokens },
   };
 }

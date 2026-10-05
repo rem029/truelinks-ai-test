@@ -5,7 +5,17 @@ import { mkdtempSync, rmSync, readFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { z } from 'zod';
-import { HealthResponse, Unit, Conversation, Lease, LeaseDocument, Message } from '@truelinks/shared';
+import {
+  HealthResponse,
+  Unit,
+  Conversation,
+  Lease,
+  LeaseDocument,
+  Message,
+  ConversationDetails,
+  ConversationReview,
+  ConversationSummary,
+} from '@truelinks/shared';
 import { createApp } from './app.ts';
 import { createDb } from './services/db/db.ts';
 import { migrateToLatest } from './migrations/migrate.ts';
@@ -83,6 +93,22 @@ describe('API', () => {
     expect(conversation.kind).toBe('lease');
     expect(conversation.unitId).toBe('MC-B-1204');
     expect(conversation.status).toBe('open');
+
+    // GET without lease returns review: null
+    const getRes = await fetch(`${baseUrl}/api/conversations/${conversation.id}`);
+    expect(getRes.status).toBe(200);
+    const getJson = await getRes.json();
+    const details = ConversationDetails.parse(getJson);
+    expect(details.lease).toBeNull();
+    expect(details.review).toBeNull();
+  });
+
+  it('GET /api/conversations?kind=lease omits empty conversations without documents', async () => {
+    const res = await fetch(`${baseUrl}/api/conversations?kind=lease`);
+    expect(res.status).toBe(200);
+    const json = await res.json();
+    const summaries = z.array(ConversationSummary).parse(json);
+    expect(summaries).toEqual([]);
   });
 
   it('POST /api/conversations fails with 400 when unitId does not exist', async () => {
@@ -165,10 +191,17 @@ describe('API', () => {
     });
     expect(Conversation.parse(getConvJson.conversation).id).toBe(conv.id);
     expect(Lease.parse(getConvJson.lease).id).toBe(lease.id);
-    expect(getConvJson.messages).toHaveLength(1);
+    expect(getConvJson.messages).toHaveLength(3);
     expect(Message.parse(getConvJson.messages[0]).id).toBe(msg.id);
+    expect(Message.parse(getConvJson.messages[1]).role).toBe('assistant');
+    expect(Message.parse(getConvJson.messages[2]).role).toBe('assistant');
     expect(getConvJson.documents).toHaveLength(1);
     expect(LeaseDocument.parse(getConvJson.documents[0]).id).toBe(doc.id);
+
+    const parsedDetails = ConversationDetails.parse(getConvJson);
+    expect(parsedDetails.review).not.toBeNull();
+    expect(Array.isArray(parsedDetails.review?.pending)).toBe(true);
+    expect(Array.isArray(parsedDetails.review?.highSeverityFailures)).toBe(true);
 
     // 4. GET document file returns identical bytes with inline disposition
     const fileRes = await fetch(`${baseUrl}/api/documents/${doc.id}/file`);
@@ -186,6 +219,16 @@ describe('API', () => {
       body: againForm,
     });
     expect(againRes.status).toBe(409);
+
+    // 6. GET /api/conversations?kind=lease returns conversations that have documents
+    const listRes = await fetch(`${baseUrl}/api/conversations?kind=lease`);
+    expect(listRes.status).toBe(200);
+    const summaries = z.array(ConversationSummary).parse(await listRes.json());
+    expect(summaries.length).toBeGreaterThan(0);
+    const summary = summaries.find((s) => s.id === conv.id);
+    expect(summary).toBeDefined();
+    expect(summary?.filename).toBe('lease-01-clean-MC-B-1204.pdf');
+    expect(summary?.kind).toBe('lease');
   });
 
   it('POST /api/conversations/:id/lease-document rejects unsupported file format with 400', async () => {
@@ -307,6 +350,122 @@ describe('API', () => {
     const doc = LeaseDocument.parse(json.document);
     expect(doc.textSource).toBe('image');
     expect(doc.clauses.length).toBeGreaterThan(0);
+  });
+
+  it('HTTP review loop happy path: upload lease-01, wait for analysis, acceptAll, confirm, and verify cards and occupied unit', async () => {
+    // 1. Create conversation
+    const convRes = await fetch(`${baseUrl}/api/conversations`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ kind: 'lease' }),
+    });
+    const conv = Conversation.parse(await convRes.json());
+
+    // 2. Upload lease-01 PDF
+    const pdfPath = resolve(import.meta.dirname, '../../../data/sample-leases/lease-01-clean-MC-B-1204.pdf');
+    const pdfBuffer = readFileSync(pdfPath);
+    const formData = new FormData();
+    formData.append('file', new Blob([pdfBuffer], { type: 'application/pdf' }), 'lease-01-clean-MC-B-1204.pdf');
+
+    const uploadRes = await fetch(`${baseUrl}/api/conversations/${conv.id}/lease-document`, {
+      method: 'POST',
+      body: formData,
+    });
+    expect(uploadRes.status).toBe(201);
+    const uploadJson = (await uploadRes.json()) as { messages: unknown[] };
+    expect(uploadJson.messages).toHaveLength(1);
+    const firstAssistantMessage = Message.parse(uploadJson.messages[0]);
+    expect(firstAssistantMessage.role).toBe('assistant');
+    expect(firstAssistantMessage.cards[0]?.type).toBe('summary');
+
+    // 3. Wait for background analysis
+    await vi.waitFor(async () => {
+      const res = await fetch(`${baseUrl}/api/conversations/${conv.id}`);
+      expect(res.status).toBe(200);
+      const json = (await res.json()) as { lease: unknown };
+      expect(Lease.parse(json.lease).analysisStatus).toBe('done');
+    });
+
+    // 4. Accept all fields
+    const acceptAllRes = await fetch(`${baseUrl}/api/conversations/${conv.id}/actions`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ type: 'acceptAll' }),
+    });
+    expect(acceptAllRes.status).toBe(200);
+    const acceptAllJson = (await acceptAllRes.json()) as { lease: unknown; messages: unknown[] };
+    expect(acceptAllJson.messages).toHaveLength(2);
+
+    // 5. Confirm lease
+    const confirmRes = await fetch(`${baseUrl}/api/conversations/${conv.id}/actions`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ type: 'confirm', conversationId: conv.id }),
+    });
+    expect(confirmRes.status).toBe(200);
+    const confirmJson = (await confirmRes.json()) as { lease: unknown; messages: unknown[] };
+    const confirmedLease = Lease.parse(confirmJson.lease);
+    expect(confirmedLease.status).toBe('confirmed');
+    expect(confirmJson.messages).toHaveLength(2);
+    expect(Message.parse(confirmJson.messages[0]).role).toBe('user');
+    expect(Message.parse(confirmJson.messages[1]).role).toBe('assistant');
+    expect(Message.parse(confirmJson.messages[1]).text).toBe('Lease confirmed. Unit MC-B-1204 marked occupied.');
+
+    // 6. Verify unit occupied and conversation confirmed
+    const convCheckRes = await fetch(`${baseUrl}/api/conversations/${conv.id}`);
+    const convCheckJson = (await convCheckRes.json()) as { conversation: unknown };
+    expect(Conversation.parse(convCheckJson.conversation).status).toBe('confirmed');
+
+    const unitsRes = await fetch(`${baseUrl}/api/units`);
+    expect(unitsRes.status).toBe(200);
+    const units = z.array(Unit).parse(await unitsRes.json());
+    const unit = units.find((u) => u.unitId === 'MC-B-1204');
+    expect(unit?.status).toBe('occupied');
+
+    // 7. Subsequent action returns 409
+    const secondActionRes = await fetch(`${baseUrl}/api/conversations/${conv.id}/actions`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ type: 'acceptAll' }),
+    });
+    expect(secondActionRes.status).toBe(409);
+  });
+
+  it('POST /api/conversations/:id/messages processes typed correction through agent loop', async () => {
+    const convRes = await fetch(`${baseUrl}/api/conversations`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ kind: 'lease' }),
+    });
+    const conv = Conversation.parse(await convRes.json());
+
+    const pdfPath = resolve(import.meta.dirname, '../../../data/sample-leases/lease-05-unknown-unit-rent-conflict.pdf');
+    const pdfBuffer = readFileSync(pdfPath);
+    const formData = new FormData();
+    formData.append('file', new Blob([pdfBuffer], { type: 'application/pdf' }), 'lease-05-unknown-unit-rent-conflict.pdf');
+
+    const uploadRes = await fetch(`${baseUrl}/api/conversations/${conv.id}/lease-document`, {
+      method: 'POST',
+      body: formData,
+    });
+    expect(uploadRes.status).toBe(201);
+
+    const messageRes = await fetch(`${baseUrl}/api/conversations/${conv.id}/messages`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text: 'monthly rent is 8,000' }),
+    });
+    expect(messageRes.status).toBe(200);
+    const json = (await messageRes.json()) as { lease: unknown; messages: unknown[] };
+    const updatedLease = Lease.parse(json.lease);
+    expect(updatedLease.record.rent.amount.value).toBe(8000);
+    expect(json.messages).toHaveLength(2);
+    const userMsg = Message.parse(json.messages[0]);
+    expect(userMsg.role).toBe('user');
+    expect(userMsg.text).toBe('monthly rent is 8,000');
+    const assistantMsg = Message.parse(json.messages[1]);
+    expect(assistantMsg.role).toBe('assistant');
+    expect(assistantMsg.agentRun).not.toBeNull();
   });
 });
 

@@ -34,6 +34,7 @@ export interface MessagesTable {
   text: string;
   cards_json: string;
   attachments_json: string;
+  tool_calls_json: string | null;
   created_at: string;
 }
 

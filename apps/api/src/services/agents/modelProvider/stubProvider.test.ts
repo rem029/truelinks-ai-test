@@ -91,7 +91,7 @@ describe('stubProvider', () => {
         {
           name: 'update_field',
           description: 'Updates a field',
-          parameters: z.object({ fieldPath: z.string(), value: z.union([z.string(), z.number()]) }),
+          parameters: z.object({ fieldPath: z.string(), value: z.string() }),
         },
       ],
     });
@@ -101,7 +101,7 @@ describe('stubProvider', () => {
       {
         id: 'call_update_field',
         name: 'update_field',
-        args: { fieldPath: 'rent.amount', value: 8500 },
+        args: { fieldPath: 'rent.amount', value: '8500' },
       },
     ]);
   });

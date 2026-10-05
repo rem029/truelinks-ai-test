@@ -2,6 +2,7 @@ import type { Kysely } from 'kysely';
 import {
   Conversation,
   type ConversationStatus,
+  type ConversationKind,
   Message,
 } from '@truelinks/shared';
 import type { Database, ConversationsTable, MessagesTable } from '../schema.ts';
@@ -9,6 +10,7 @@ import type { Database, ConversationsTable, MessagesTable } from '../schema.ts';
 export interface ConversationRepository {
   create(conversation: Conversation): Promise<Conversation>;
   get(id: string): Promise<Conversation | null>;
+  list(filter?: { kind?: ConversationKind }): Promise<Conversation[]>;
   listMessages(conversationId: string): Promise<Message[]>;
   addMessage(message: Message): Promise<Message>;
   setStatus(id: string, status: ConversationStatus): Promise<Conversation>;
@@ -33,6 +35,7 @@ function messageToDomain(row: MessagesTable): Message {
     text: row.text,
     cards: JSON.parse(row.cards_json),
     attachments: JSON.parse(row.attachments_json),
+    agentRun: row.tool_calls_json ? JSON.parse(row.tool_calls_json) : null,
     createdAt: row.created_at,
   });
 }
@@ -59,6 +62,15 @@ export function createConversationRepository(db: Kysely<Database>): Conversation
       return row ? conversationToDomain(row) : null;
     },
 
+    async list(filter?: { kind?: ConversationKind }): Promise<Conversation[]> {
+      let query = db.selectFrom('conversations').selectAll().orderBy('updated_at', 'desc');
+      if (filter?.kind) {
+        query = query.where('kind', '=', filter.kind);
+      }
+      const rows = await query.execute();
+      return rows.map(conversationToDomain);
+    },
+
     async listMessages(conversationId: string): Promise<Message[]> {
       const rows = await db
         .selectFrom('messages')
@@ -79,9 +91,17 @@ export function createConversationRepository(db: Kysely<Database>): Conversation
           text: message.text,
           cards_json: JSON.stringify(message.cards),
           attachments_json: JSON.stringify(message.attachments),
+          tool_calls_json: message.agentRun ? JSON.stringify(message.agentRun) : null,
           created_at: message.createdAt,
         })
         .execute();
+
+      await db
+        .updateTable('conversations')
+        .set({ updated_at: message.createdAt })
+        .where('id', '=', message.conversationId)
+        .execute();
+
       return message;
     },
 

@@ -4,11 +4,11 @@ import { Card, ALLOWED_ACTIONS } from './cards.ts';
 describe('Card union and ALLOWED_ACTIONS', () => {
   it('exposes expected ALLOWED_ACTIONS for every card type', () => {
     expect(ALLOWED_ACTIONS.field).toEqual(['accept', 'reject', 'edit']);
-    expect(ALLOWED_ACTIONS.rule).toEqual(['accept']);
+    expect(ALLOWED_ACTIONS.rule).toEqual([]);
     expect(ALLOWED_ACTIONS.flag).toEqual(['accept', 'reject']);
     expect(ALLOWED_ACTIONS.unitMatch).toEqual(['choose']);
     expect(ALLOWED_ACTIONS.workOrder).toEqual(['accept', 'reject', 'edit']);
-    expect(ALLOWED_ACTIONS.summary).toEqual(['confirm']);
+    expect(ALLOWED_ACTIONS.summary).toEqual(['confirm', 'acceptAll']);
   });
 
   it('parses a valid field card', () => {

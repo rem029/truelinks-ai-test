@@ -126,6 +126,7 @@ export async function ingestLease(
     conversationId,
     role: 'user',
     text: '',
+    cards: [],
     attachments: [
       {
         id: documentId,
@@ -133,7 +134,7 @@ export async function ingestLease(
         mimeType: file.mimeType,
       },
     ],
-    cards: [],
+    agentRun: null,
     createdAt: new Date().toISOString(),
   };
   await repositories.conversations.addMessage(message);

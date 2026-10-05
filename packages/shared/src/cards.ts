@@ -64,11 +64,11 @@ export type Card = z.infer<typeof Card>;
 
 export const ALLOWED_ACTIONS = {
   field: ['accept', 'reject', 'edit'],
-  rule: ['accept'],
+  rule: [],
   flag: ['accept', 'reject'],
   unitMatch: ['choose'],
   workOrder: ['accept', 'reject', 'edit'],
-  summary: ['confirm'],
+  summary: ['confirm', 'acceptAll'],
 } as const satisfies Record<Card['type'], readonly ActionType[]>;
 
 export type AllowedActionsMap = typeof ALLOWED_ACTIONS;

@@ -185,12 +185,51 @@ Goal: upload lease in chat → sourced record, flags, rule results, unit match �
 
 ## Phase 4 — Review loop
 ### Tasks
-- [ ] First reply: summary + cards only for items needing attention; rest collapsed with "Accept all"
-- [ ] Card actions → patch record, lock accepted fields
-- [ ] Typed message → agent loop with `search_clauses`, `update_field`, `find_unit`, `evaluate_rules`, `ask_user`
-- [ ] After each turn: re-run flags + rules, reply with what changed + what's open
-- [ ] Confirm (user button only): nothing pending; high-severity FAIL needs override reason; commits lease, unit → `occupied`
-- [ ] Unclear correction → agent asks, never guesses
-- [ ] Storage: a `tool_calls_json` column on `messages` (tool calls, plus model, tokens and time per assistant message). Indexes: `messages(conversation_id, created_at)`, and `unit_id` on `leases`, `issues` and `work_orders`.
+- [x] First reply: summary + cards only for items needing attention; rest collapsed with "Accept all"
+- [x] Card actions → patch record, lock accepted fields
+- [x] Typed message → agent loop with `search_clauses`, `update_field`, `find_unit`, `evaluate_rules`, `ask_user`
+- [x] After each turn: re-run flags + rules, reply with what changed + what's open
+- [x] Confirm (user button only): nothing pending; high-severity FAIL needs override reason; commits lease, unit → `occupied`
+- [x] Unclear correction → agent asks, never guesses
+- [x] Storage: a `tool_calls_json` column on `messages` (tool calls, plus model, tokens and time per assistant message). Indexes: `messages(conversation_id, created_at)`, and `unit_id` on `leases`, `issues` and `work_orders`.
 ### Results
--
+- Written by agy in three briefs (pure logic; storage + card actions + confirm; agent turn), reviewed by Claude after each, and tested against the real models.
+- **Pure logic** (`apps/api/src/services/leases/`):
+  - `leaseFields.ts`: `FIELD_PATHS`, a value schema per path, `getField`/`setField`. `setField` re-parses the record, so a wrong type fails loudly. `buildLeaseRecord` uses the same schemas.
+  - `review/patchRecord.ts`: `parseFieldValue` (converts "QAR 8,500", "true", dates), plus accept, reject (keeps `original`), edit (user source, keeps the first original), `acceptAllFields` (skips flagged and empty fields) and `isLocked` (accepted or edited).
+  - `review/mergeFlags.ts`: re-derived flags carry `reviewStatus` over by id. UNREADABLE_VALUE, VALUE_CONFLICT, MODEL_CONCERN and ANALYSIS_FAILED are kept until every field they name is locked.
+  - `review/pendingItems.ts`: what blocks confirm, and the high-severity FAILs.
+  - `review/reviewCards.ts`: card ids `summary`, `unitMatch`, `flag:<id>`, `rule:<id>`, `field:<path>`; `parseCardId`; `describeChanges`.
+- **Services:**
+  - `reevaluateLease` (evaluate + merge, not saved) and `reviewMessage.ts` (assistant message with the cards; first reply on upload).
+  - `analyzeLease` posts "Full review finished: …" when it ends.
+  - `applyCardAction` validates everything before saving the user message.
+  - `confirmLease` (409 with `pending` or `failures`).
+  - `leaseTools.ts` and `correctionTurn.ts`, with the prompt `leaseCorrection.md`.
+  - `loadDraftLease`: shared 404/409 checks.
+- **Shared:** an `acceptAll` action. `ALLOWED_ACTIONS.rule` is now `[]`: rule results are re-derived, and a high FAIL is handled by the override reason. `Message.agentRun` holds the model, tokens, ms and tool calls.
+- **Storage:** `004_review_loop` adds `messages.tool_calls_json` and indexes on `messages(conversation_id, created_at)` and `unit_id` on leases, issues and work_orders.
+- **API:** `POST /conversations/:id/actions` and `POST /conversations/:id/messages`. The upload response adds `messages`.
+- **Decision: locked fields can't be changed by the agent.** `update_field` refuses them and the agent points the owner to the card's Edit. **For the UI phase:** collapsed fields still need an Edit control after "Accept all".
+- **Real-model fixes:**
+  - `update_field.value` was a string/number/boolean union. mimo produced broken arguments every time, so it is now a string.
+  - The agent searched for a missing unit 6 times; the prompt now says to ask after two tries.
+  - The step-limit reply is now written for the owner.
+  - "Accept all" now says how many fields it accepted.
+  - The agent no longer repeats the open items the app lists.
+- **Tests:** patch/lock, flag merge, pending items, cards, tools, card actions and confirm (lease-05 conflict resolved by an edit, lease-02 unit choice, 409s, override, unit occupied), the correction turn on the stub, and HTTP round trips. 299 pass and typecheck is clean.
+- **End-to-end** on lease-05 with the real models:
+  - The upload replied in 4.5 s with 5 attention cards. The analysis then added the rent conflict and two concerns.
+  - "the rent looks wrong" → read the clauses, then asked 8,500 or 8,000 (9 s).
+  - "What does the lease say about renewal?" → quoted clause 6 (9 s).
+  - "monthly rent is 8,500 as in clause 2" → set rent.amount and rent.monthly, and the conflict resolved (34 s, 3 tool calls).
+  - Unknown parking bay → two searches, then asked (10 s).
+  - "Accept all", then "deposit is 20000" → refused as locked (6 s).
+  - Confirm is covered by tests rather than run on the dev DB, so the seeded units stay available.
+- **Adversarial review (Gemini Pro):**
+  - Confirm wrote the unit, the conversation and the lease one after another. It now runs in one transaction (`repositories.transaction`, Kysely), and a test checks that a failed lease write leaves the unit available.
+  - By design: an agent edit cites the owner's typed message and the reply shows it. A rejected field can be set again by a typed message. Empty optional fields don't block confirm, while required ones have MISSING_FIELD flags that do.
+- **Known limits:**
+  - If the owner accepts both conflicting fields (the conflict flag is dropped) and then rejects one, the flag doesn't come back. The rejected field is empty and flagged as missing instead.
+  - A correction that changes a value takes 20–35 s on mimo. The UI should show the steps as they happen (`agentRun`), and a faster tool-calling model is a settings choice (task 08).
+  - The background analysis and an owner action can overlap: the analysis re-reads before saving, but the two writes aren't in one transaction.

@@ -1,11 +1,10 @@
-import { z } from 'zod';
 import {
   type Clause,
   type Flag,
   type LeaseRecord,
   LeaseRecord as LeaseRecordSchema,
-  RentFrequency,
 } from '@truelinks/shared';
+import { FIELD_VALUE_SCHEMAS, type FieldPath } from '../leaseFields.ts';
 import type {
   ExtractedBoolean,
   ExtractedNumber,
@@ -15,32 +14,31 @@ import type {
 import { verifyQuote } from './verifyQuote.ts';
 
 interface FieldDef {
-  fieldPath: string;
+  fieldPath: FieldPath;
   get: (extraction: LeaseExtraction) => ExtractedText | ExtractedNumber | ExtractedBoolean;
-  schema: z.ZodTypeAny;
 }
 
 const FIELD_DEFS: FieldDef[] = [
-  { fieldPath: 'landlord.name', get: (e) => e.fields.landlord.name, schema: z.string() },
-  { fieldPath: 'landlord.signed', get: (e) => e.fields.landlord.signed, schema: z.boolean() },
-  { fieldPath: 'tenant.name', get: (e) => e.fields.tenant.name, schema: z.string() },
-  { fieldPath: 'tenant.signed', get: (e) => e.fields.tenant.signed, schema: z.boolean() },
-  { fieldPath: 'unit.unitId', get: (e) => e.fields.unit.unitId, schema: z.string() },
-  { fieldPath: 'unit.label', get: (e) => e.fields.unit.label, schema: z.string() },
-  { fieldPath: 'unit.parkingBay', get: (e) => e.fields.unit.parkingBay, schema: z.string() },
-  { fieldPath: 'commencementDate', get: (e) => e.fields.commencementDate, schema: z.iso.date() },
-  { fieldPath: 'expiryDate', get: (e) => e.fields.expiryDate, schema: z.iso.date() },
-  { fieldPath: 'termMonths', get: (e) => e.fields.termMonths, schema: z.number() },
-  { fieldPath: 'rent.amount', get: (e) => e.fields.rent.amount, schema: z.number() },
-  { fieldPath: 'rent.frequency', get: (e) => e.fields.rent.frequency, schema: RentFrequency },
-  { fieldPath: 'rent.monthly', get: (e) => e.fields.rent.monthly, schema: z.number() },
-  { fieldPath: 'rent.annual', get: (e) => e.fields.rent.annual, schema: z.number() },
-  { fieldPath: 'currency', get: (e) => e.fields.currency, schema: z.string() },
-  { fieldPath: 'deposit', get: (e) => e.fields.deposit, schema: z.number() },
-  { fieldPath: 'escalation.text', get: (e) => e.fields.escalation.text, schema: z.string() },
-  { fieldPath: 'escalation.isDefined', get: (e) => e.fields.escalation.isDefined, schema: z.boolean() },
-  { fieldPath: 'renewal', get: (e) => e.fields.renewal, schema: z.string() },
-  { fieldPath: 'termination', get: (e) => e.fields.termination, schema: z.string() },
+  { fieldPath: 'landlord.name', get: (e) => e.fields.landlord.name },
+  { fieldPath: 'landlord.signed', get: (e) => e.fields.landlord.signed },
+  { fieldPath: 'tenant.name', get: (e) => e.fields.tenant.name },
+  { fieldPath: 'tenant.signed', get: (e) => e.fields.tenant.signed },
+  { fieldPath: 'unit.unitId', get: (e) => e.fields.unit.unitId },
+  { fieldPath: 'unit.label', get: (e) => e.fields.unit.label },
+  { fieldPath: 'unit.parkingBay', get: (e) => e.fields.unit.parkingBay },
+  { fieldPath: 'commencementDate', get: (e) => e.fields.commencementDate },
+  { fieldPath: 'expiryDate', get: (e) => e.fields.expiryDate },
+  { fieldPath: 'termMonths', get: (e) => e.fields.termMonths },
+  { fieldPath: 'rent.amount', get: (e) => e.fields.rent.amount },
+  { fieldPath: 'rent.frequency', get: (e) => e.fields.rent.frequency },
+  { fieldPath: 'rent.monthly', get: (e) => e.fields.rent.monthly },
+  { fieldPath: 'rent.annual', get: (e) => e.fields.rent.annual },
+  { fieldPath: 'currency', get: (e) => e.fields.currency },
+  { fieldPath: 'deposit', get: (e) => e.fields.deposit },
+  { fieldPath: 'escalation.text', get: (e) => e.fields.escalation.text },
+  { fieldPath: 'escalation.isDefined', get: (e) => e.fields.escalation.isDefined },
+  { fieldPath: 'renewal', get: (e) => e.fields.renewal },
+  { fieldPath: 'termination', get: (e) => e.fields.termination },
 ];
 
 function setNestedField(target: Record<string, unknown>, path: string, value: unknown): void {
@@ -86,7 +84,8 @@ export function buildLeaseRecord(
       }
     }
 
-    const parsed = entry.schema.safeParse(rawValue);
+    const schema = FIELD_VALUE_SCHEMAS[entry.fieldPath];
+    const parsed = schema.safeParse(rawValue);
     if (!parsed.success) {
       setNestedField(rawRecord, entry.fieldPath, {
         value: null,

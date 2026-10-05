@@ -21,6 +21,7 @@ export interface Repositories {
   conversations: ConversationRepository;
   issues: IssueRepository;
   documents: DocumentRepository;
+  transaction<T>(fn: (repos: Repositories) => Promise<T>): Promise<T>;
 }
 
 export function createRepositories(db: Kysely<Database>): Repositories {
@@ -31,6 +32,9 @@ export function createRepositories(db: Kysely<Database>): Repositories {
     conversations: createConversationRepository(db),
     issues: createIssueRepository(db),
     documents: createDocumentRepository(db),
+    async transaction<T>(fn: (repos: Repositories) => Promise<T>): Promise<T> {
+      return db.transaction().execute((trx) => fn(createRepositories(trx)));
+    },
   };
 }
 
