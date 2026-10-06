@@ -78,12 +78,12 @@ export function UploadDropZone({
   const currentStep = elapsed < 3 ? 'Reading document' : 'Extracting fields';
 
   return (
-    <div style={{ padding: '2rem 1rem' }}>
+    <div className="drop-zone-container">
       <input
         ref={fileInputRef}
         type="file"
         accept=".pdf,.docx,.png,.jpg,.jpeg,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,image/png,image/jpeg"
-        style={{ display: 'none' }}
+        hidden
         onChange={handleFileInputChange}
       />
 
@@ -104,17 +104,17 @@ export function UploadDropZone({
       >
         {uploading ? (
           <div className="upload-progress">
-            <div style={{ fontSize: '1.25rem' }}>⏳</div>
-            <div style={{ fontWeight: 600, color: 'var(--text-primary)' }}>
+            <div className="upload-progress-icon">⏳</div>
+            <div className="upload-progress-step">
               {currentStep}…
             </div>
-            <div style={{ fontSize: '0.8125rem' }}>
+            <div className="upload-progress-elapsed">
               Elapsed: {formatElapsedSeconds(elapsed)}
             </div>
           </div>
         ) : (
           <>
-            <div style={{ fontSize: '2rem', opacity: 0.8 }}>📄</div>
+            <div className="drop-zone-icon">📄</div>
             <div className="drop-zone-title">Upload a lease document to begin review</div>
             <div className="drop-zone-subtitle">
               Drag &amp; drop a PDF, DOCX, PNG, or JPEG file here, or click to browse
@@ -124,21 +124,7 @@ export function UploadDropZone({
       </div>
 
       {error && (
-        <div
-          style={{
-            marginTop: '1rem',
-            padding: '0.75rem 1rem',
-            borderRadius: 'var(--radius-md)',
-            backgroundColor: 'var(--fail-bg)',
-            border: '1px solid var(--fail-border)',
-            color: 'var(--fail-text)',
-            fontSize: '0.875rem',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            gap: '1rem',
-          }}
-        >
+        <div className="upload-error-alert">
           <div>
             <strong>Upload failed:</strong> {error}
           </div>

@@ -83,7 +83,7 @@ export function MessageItem({
                 : `Show ${message.cards.length} ${message.cards.length === 1 ? 'card' : 'cards'} ▾`}
             </button>
             {showOlderCards && (
-              <div className="cards-container" style={{ marginTop: '0.5rem' }}>
+              <div className="cards-container older-cards-list">
                 {message.cards.map((card) => (
                   <CardRenderer
                     key={card.id}

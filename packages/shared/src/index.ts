@@ -10,3 +10,4 @@ export * from './actions.ts';
 export * from './cards.ts';
 export * from './conversation.ts';
 export * from './leaseDocument.ts';
+export * from './fieldLabels.ts';

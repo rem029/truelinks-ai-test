@@ -7,7 +7,7 @@ import {
   postWorkOrderAction,
   postIssueMessage,
 } from '../utils/api.ts';
-import { navigate, threadParent } from '../utils/router.ts';
+import { navigate, threadParent, toHash } from '../utils/router.ts';
 import { CardRenderer } from '../components/cards/CardRenderer.tsx';
 import { IssueReportForm, type IssueReportFormData } from '../components/issue/IssueReportForm.tsx';
 import { Composer } from '../components/thread/Composer.tsx';
@@ -142,18 +142,11 @@ export function IssueThreadPage({ conversationId, initialData }: IssueThreadPage
         {/* Header */}
         <header className="thread-header">
           <div className="thread-header-left">
-            <button
-              type="button"
-              className="btn btn-subtle btn-sm"
-              onClick={() => navigate(threadParent('issue', conversation.unitId))}
-            >
+            <a className="btn btn-subtle btn-sm" href={toHash(threadParent('issue', conversation.unitId))}>
               ← {conversation.unitId ?? 'Home'}
-            </button>
+            </a>
             <div className="thread-title">
-              <span>Issue report</span>
-              {conversation.unitId && (
-                <span className="badge badge-accent">Unit {conversation.unitId}</span>
-              )}
+              <h1 className="thread-heading">Issue report</h1>
               <span className="badge badge-subtle">{conversation.status}</span>
             </div>
           </div>

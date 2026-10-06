@@ -53,7 +53,7 @@ export function FlagCardView({
   return (
     <div className="card-item flag-card">
       <div className="card-header">
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+        <div className="card-header-left">
           <span className={`badge ${severityBadgeClass}`}>
             {flag.severity.toUpperCase()}
           </span>
@@ -68,16 +68,15 @@ export function FlagCardView({
         )}
       </div>
 
-      <p style={{ fontSize: '0.875rem' }}>{flag.message}</p>
+      <p className="flag-card-message">{flag.message}</p>
 
       {flag.clauseIds.length > 0 && (
-        <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
+        <div className="flag-card-meta">
           Clauses:{' '}
           {flag.clauseIds.map((cid) => (
             <span
               key={cid}
-              className="badge badge-subtle"
-              style={{ marginRight: '0.25rem', fontFamily: 'var(--font-mono)' }}
+              className="badge badge-subtle flag-card-clause-badge"
             >
               Clause {cid}
             </span>

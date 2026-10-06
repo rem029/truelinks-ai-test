@@ -11,6 +11,7 @@ export interface AgentTurnOptions {
   messages: ChatMessage[];
   tools?: readonly Tool[];
   maxSteps?: number;
+  reasoningEffort?: 'low' | 'medium' | 'high';
 }
 
 export interface AgentTurnResult {
@@ -41,6 +42,7 @@ export async function runAgentTurn(options: AgentTurnOptions): Promise<AgentTurn
       purpose: options.purpose,
       messages: transcript,
       tools: toolSpecs,
+      ...(options.reasoningEffort ? { reasoningEffort: options.reasoningEffort } : {}),
     });
 
     lastModel = completion.model;

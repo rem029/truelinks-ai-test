@@ -9,6 +9,7 @@ export interface LeaseReviewListProps {
 function describeStatus(review: ConversationSummary): string {
   if (review.leaseStatus === 'confirmed') return 'Confirmed';
   if (review.openItems === null) return 'Draft';
+  if (review.openItems === 0) return 'Draft · no open items';
   return `Draft · ${review.openItems} open ${review.openItems === 1 ? 'item' : 'items'}`;
 }
 

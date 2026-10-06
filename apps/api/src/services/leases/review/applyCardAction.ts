@@ -3,6 +3,7 @@ import {
   type Action,
   ALLOWED_ACTIONS,
   type Flag,
+  getFieldLabel,
   type Lease,
   type LeaseRecord,
   type Message,
@@ -35,13 +36,13 @@ function applyFieldAction(
   let updatedRecord = record;
   try {
     if (action.type === 'accept') {
-      userText = `Accepted ${fieldPath}`;
+      userText = `Accepted ${getFieldLabel(fieldPath)}`;
       updatedRecord = acceptField(record, fieldPath, now);
     } else if (action.type === 'reject') {
-      userText = `Rejected ${fieldPath}`;
+      userText = `Rejected ${getFieldLabel(fieldPath)}`;
       updatedRecord = rejectField(record, fieldPath, now);
     } else if (action.type === 'edit') {
-      userText = `Changed ${fieldPath} to ${String(action.value)}`;
+      userText = `Changed ${getFieldLabel(fieldPath)} to ${String(action.value)}`;
       updatedRecord = editField(record, fieldPath, action.value, userMessageId, now);
     }
   } catch (err) {

@@ -35,26 +35,23 @@ export function UnitPage({ unitId, tab, unit, reviews }: UnitPageProps) {
             </p>
           )}
         </div>
-        {unit && <span className={`badge ${unit.status === 'occupied' ? 'badge-accent' : 'badge-subtle'}`}>{unit.status}</span>}
+        {unit && <span className={`badge ${unit.status === 'available' ? 'badge-pass' : 'badge-subtle'}`}>{unit.status}</span>}
       </header>
 
-      <div className="tabs" role="tablist" aria-label={`${unitId} records`}>
+      <nav className="tabs" aria-label={`${unitId} records`}>
         {TABS.map((t) => (
           <a
             key={t.id}
-            role="tab"
-            id={`tab-${t.id}`}
-            aria-selected={tab === t.id}
-            aria-controls={`panel-${t.id}`}
+            aria-current={tab === t.id ? 'page' : undefined}
             className={`tab ${tab === t.id ? 'is-active' : ''}`}
             href={toHash({ name: 'unit', unitId, tab: t.id })}
           >
             {t.label} <span className="tab-count">{counts[t.id]}</span>
           </a>
         ))}
-      </div>
+      </nav>
 
-      <section role="tabpanel" id={`panel-${tab}`} aria-labelledby={`tab-${tab}`} className="tab-panel">
+      <section className="tab-panel" aria-label={TABS.find((t) => t.id === tab)?.label}>
         {tab === 'issues' &&
           (issues.length > 0 ? (
             <IssueReportList reports={issues} />

@@ -90,6 +90,7 @@ export async function runCorrectionTurn(
       messages: [{ role: 'system', content: systemContent }, ...historyMessages],
       tools,
       maxSteps: 6,
+      reasoningEffort: 'low',
     });
   } catch (err) {
     const reason = err instanceof Error ? err.message : String(err);

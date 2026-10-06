@@ -4,7 +4,7 @@ import { resolve } from 'node:path';
 import type { AgentRun, Issue, Message, WorkOrder, WorkOrderCard } from '@truelinks/shared';
 import type { Repositories } from '../../db/repositories/index.ts';
 import type { ChatMessage, ModelProvider } from '../agents/modelProvider/types.ts';
-import { runAgentTurn, type AgentTurnResult } from '../agents/agentLoop.ts';
+import { runAgentTurn, type AgentTurnResult, type ToolCallLog } from '../agents/agentLoop.ts';
 import { HttpError } from '../../utils/httpError.ts';
 import { dedupeDamages } from './summaryText.ts';
 import { createWorkOrderTools, type WorkOrderTurnState } from './workOrderTools.ts';
@@ -68,6 +68,15 @@ export async function loadIssueForWorkOrder(conversationId: string, repositories
   return { issue, workOrder };
 }
 
+// The lease text is model context; the thread only needs to show that the lease was read
+function withoutLeaseText(call: ToolCallLog): ToolCallLog {
+  if (!call.ok || call.name !== 'get_unit_lease') return call;
+  const result = call.result as { leaseId?: string; tenant?: string; clauses?: unknown[]; reason?: string };
+  return result.clauses
+    ? { ...call, result: { leaseId: result.leaseId, tenant: result.tenant, clauseCount: result.clauses.length } }
+    : call;
+}
+
 export async function runWorkOrderTurn(
   conversationId: string,
   userText: string | null,
@@ -118,6 +127,7 @@ export async function runWorkOrderTurn(
       ],
       tools: createWorkOrderTools(state, { repositories }),
       maxSteps: 6,
+      reasoningEffort: 'low',
     });
   } catch (err) {
     const reason = err instanceof Error ? err.message : String(err);
@@ -134,7 +144,7 @@ export async function runWorkOrderTurn(
     inputTokens: turnResult.usage.inputTokens,
     outputTokens: turnResult.usage.outputTokens,
     ms: Date.now() - start,
-    toolCalls: turnResult.toolCalls,
+    toolCalls: turnResult.toolCalls.map(withoutLeaseText),
   };
 
   const assistantMessage: Message = {

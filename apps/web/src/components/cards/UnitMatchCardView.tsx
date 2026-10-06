@@ -60,40 +60,31 @@ export function UnitMatchCardView({
         <h4 className="card-title">Unit Match</h4>
         <span className="badge badge-subtle">Unit</span>
       </div>
-      <p style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>{card.reason}</p>
+      <p className="unit-match-reason">{card.reason}</p>
 
       {/* Suggested candidates */}
       {card.candidates.length > 0 ? (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+        <div className="unit-match-candidates">
           {card.candidates.map((unit) => {
             const isSelected = activeUnitId === unit.unitId;
             return (
               <div
                 key={unit.unitId}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  padding: '0.5rem 0.75rem',
-                  border: isSelected ? '1px solid var(--accent)' : '1px solid var(--border-subtle)',
-                  backgroundColor: isSelected ? 'var(--accent-subtle)' : 'var(--bg-subtle)',
-                  borderRadius: 'var(--radius-sm)',
-                }}
+                className={`unit-match-option${isSelected ? ' selected' : ''}`}
               >
                 <div>
-                  <span style={{ fontWeight: 600, fontFamily: 'var(--font-mono)' }}>
+                  <span className="unit-match-id">
                     {unit.unitId}
                   </span>{' '}
                   · <span>{unit.label}</span> ·{' '}
-                  <span style={{ color: 'var(--text-secondary)' }}>{unit.buildingName}</span>{' '}
+                  <span className="unit-match-building">{unit.buildingName}</span>{' '}
                   <span
-                    className={`badge ${unit.status === 'available' ? 'badge-pass' : 'badge-warn'}`}
-                    style={{ marginLeft: '0.25rem' }}
+                    className={`badge ${unit.status === 'available' ? 'badge-pass' : 'badge-warn'} unit-match-badge`}
                   >
                     {unit.status}
                   </span>
                   {isSelected && (
-                    <span className="badge badge-accent" style={{ marginLeft: '0.25rem' }}>
+                    <span className="badge badge-accent unit-match-badge">
                       Selected
                     </span>
                   )}
@@ -113,29 +104,23 @@ export function UnitMatchCardView({
           })}
         </div>
       ) : (
-        <div style={{ fontSize: '0.8125rem', color: 'var(--text-secondary)', fontStyle: 'italic' }}>
+        <div className="unit-match-empty">
           No candidate suggestions found in property records. Pick a unit below:
         </div>
       )}
 
       {/* All units select (always available, suggestions first) */}
-      <div style={{ marginTop: '0.75rem', paddingTop: '0.75rem', borderTop: '1px solid var(--border-subtle)' }}>
+      <div className="unit-match-manual">
         <label
           htmlFor="unit-select-input"
-          style={{
-            display: 'block',
-            fontSize: '0.75rem',
-            fontWeight: 600,
-            color: 'var(--text-secondary)',
-            marginBottom: '0.35rem',
-          }}
+          className="unit-match-label"
         >
           All units in records:
         </label>
-        <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+        <div className="unit-match-select-row">
           <select
             id="unit-select-input"
-            style={{ flex: 1, fontSize: '0.8125rem' }}
+            className="unit-match-select"
             value={selectedManualId}
             onChange={(e) => setSelectedManualId(e.target.value)}
             disabled={!isInteractive || choosingUnitId !== null || allUnits.length === 0}

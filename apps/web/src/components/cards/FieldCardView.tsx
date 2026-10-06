@@ -31,6 +31,9 @@ export function FieldCardView({
     field.value !== null && field.value !== undefined ? String(field.value) : ''
   );
 
+  // A unit must be picked from the list before it can be saved
+  const unitNotPicked = card.fieldPath === 'unit.unitId' && editValue === String(field.value ?? '');
+
   const primaryDoc = documents[0];
   let clausePage: number | null = null;
   let clauseText: string | null = null;
@@ -106,12 +109,12 @@ export function FieldCardView({
         <span className={`badge ${statusBadgeClass}`}>{reviewStatus}</span>
       </div>
 
-      <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.75rem' }}>
-        <span style={{ fontSize: '1rem', fontWeight: 600 }}>
+      <div className="field-card-value-row">
+        <span className="field-card-value">
           {formatFieldValue(card.fieldPath, field.value)}
         </span>
         {field.confidence !== undefined && field.confidence < 1 && (
-          <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+          <span className="field-card-confidence">
             ({Math.round(field.confidence * 100)}% conf)
           </span>
         )}
@@ -119,24 +122,17 @@ export function FieldCardView({
 
       {field.source?.type === 'document' && (
         <div className="card-quote-box">
-          <div style={{ marginBottom: '0.25rem', fontStyle: 'italic' }}>
+          <div className="field-card-quote-text">
             &ldquo;{field.source.quote}&rdquo;
           </div>
-          <div
-            style={{
-              fontSize: '0.75rem',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.5rem',
-            }}
-          >
+          <div className="field-card-quote-meta">
             <span>Clause {field.source.clauseId}</span>
             {primaryDoc && clausePage !== null && (
               <a
                 href={getDocumentFileUrl(primaryDoc.id, clausePage)}
                 target="_blank"
                 rel="noreferrer"
-                style={{ fontSize: '0.75rem' }}
+                className="field-card-quote-link"
               >
                 Page {clausePage} ↗
               </a>
@@ -146,13 +142,13 @@ export function FieldCardView({
       )}
 
       {field.source?.type === 'user' && (
-        <div style={{ fontSize: '0.8125rem', color: 'var(--text-secondary)' }}>
+        <div className="field-card-source">
           from your message
         </div>
       )}
 
       {isEditing ? (
-        <form onSubmit={handleSaveEdit} style={{ display: 'flex', gap: '0.5rem', marginTop: '0.25rem' }}>
+        <form onSubmit={handleSaveEdit} className="field-card-edit-form">
           {card.fieldPath === 'unit.unitId' ? (
             <UnitSelect value={editValue} onChange={setEditValue} disabled={submitting !== null} />
           ) : isBooleanField ? (
@@ -176,7 +172,7 @@ export function FieldCardView({
           <button
             type="submit"
             className="btn btn-primary btn-sm"
-            disabled={submitting !== null}
+            disabled={submitting !== null || unitNotPicked}
           >
             {submitting === 'edit' ? 'Saving...' : 'Save'}
           </button>

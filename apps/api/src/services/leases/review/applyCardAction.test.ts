@@ -78,7 +78,7 @@ describe('applyCardAction and confirmLease', () => {
 
     expect(result.messages).toHaveLength(2);
     expect(result.messages[0]?.role).toBe('user');
-    expect(result.messages[0]?.text).toBe('Changed rent.monthly to QAR 8,500');
+    expect(result.messages[0]?.text).toBe('Changed Monthly Rent to QAR 8,500');
     expect(result.messages[1]?.role).toBe('assistant');
     expect(result.messages[1]?.text).toContain('Flag resolved:');
   });

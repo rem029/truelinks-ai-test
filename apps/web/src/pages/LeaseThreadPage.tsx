@@ -10,7 +10,7 @@ import {
   postMessage,
   ApiError,
 } from '../utils/api.ts';
-import { navigate, threadParent } from '../utils/router.ts';
+import { navigate, threadParent, toHash } from '../utils/router.ts';
 import { MessageItem } from '../components/thread/MessageItem.tsx';
 import { UploadDropZone } from '../components/thread/UploadDropZone.tsx';
 import { ConfirmBar } from '../components/thread/ConfirmBar.tsx';
@@ -239,18 +239,11 @@ export function LeaseThreadPage({ conversationId, initialData }: LeaseThreadPage
         {/* Header */}
         <header className="thread-header">
           <div className="thread-header-left">
-            <button
-              type="button"
-              className="btn btn-subtle btn-sm"
-              onClick={() => navigate(threadParent('lease', lease?.unitId ?? conversation.unitId))}
-            >
+            <a className="btn btn-subtle btn-sm" href={toHash(threadParent('lease', lease?.unitId ?? conversation.unitId))}>
               ← {lease?.unitId ?? conversation.unitId ?? 'Unassigned'}
-            </button>
+            </a>
             <div className="thread-title">
-              <span>Lease Review</span>
-              {lease?.unitId && (
-                <span className="badge badge-accent">Unit {lease.unitId}</span>
-              )}
+              <h1 className="thread-heading">Lease review</h1>
               {isConfirmed ? (
                 <span className="badge badge-pass">Confirmed</span>
               ) : (

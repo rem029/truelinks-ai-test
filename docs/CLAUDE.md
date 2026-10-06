@@ -21,7 +21,7 @@ Brief: `docs/attachments/Solution-brief-explained.docx` (summary in `docs/email.
 
 ## Folder structure
 - `apps/api/src`: `routes/` (endpoints: validate input with Zod, call a service, respond; no business logic), `services/` (business logic; no `req`/`res`) with `services/agents/` (lease + issue agents, prompt files, model provider), `db/` (Kysely setup, schema types, seed, repositories: data access only, no business logic), `migrations/` (database migrations, numbered `NNN_name.ts`; never edit one that has been committed, add a new one), `middleware/` (Express middleware), `utils/` (small pure helpers). `env.ts`, `app.ts`, `server.ts` at the root.
-- `apps/web/src`: `pages/` (one component per screen), `components/` (reusable), `hooks/` (when needed), `store/` (Zustand, only for state shared across screens), `utils/` (helpers; `utils/api.ts` is the only place that calls `fetch`).
+- `apps/web/src`: `pages/` (one component per screen), `components/` (reusable), `hooks/` (when needed), `store/` (Zustand, only for state shared across screens), `utils/` (helpers; `utils/api.ts` is the only place that calls `fetch`), `styles/` (plain CSS by area: tokens, base, shell, thread, cards, issue; no inline styles).
 - Create a folder when its first file arrives; no empty placeholder folders.
 - Tests sit next to the file they test (`rules.ts` → `rules.test.ts`).
 
@@ -54,12 +54,6 @@ Approved so far: express, zod, multer, kysely, better-sqlite3, openai, unpdf, ma
 - No tool may confirm, commit or change occupancy — user action only.
 - Tool args validated with Zod; max ~6 steps per turn; every call logged.
 - Prompts live in their own files next to the agent, versioned with the code.
-
-## UI direction
-- Reference: Claude Code's UI — chat-first, calm warm neutrals, one terracotta accent, sans for prose + mono for data/quotes, minimal chrome, collapsible step cards, light + dark.
-- Inspired by, not a copy: no Anthropic/Claude logos, names or branding.
-- Use `/impeccable` to shape, critique, audit and polish UI work.
-- Accessibility basics: semantic HTML, keyboard reachable actions, visible focus, sufficient contrast.
 
 ## Dev environment
 - Ports: web **3000**, API **8083**. The web app reaches the API via Vite's `/api` proxy (no CORS). Extra hostnames go in `WEB_ALLOWED_HOSTS` in `.env` — never hardcode them.

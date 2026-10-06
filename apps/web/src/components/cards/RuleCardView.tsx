@@ -18,7 +18,7 @@ export function RuleCardView({ card, currentRule }: RuleCardViewProps) {
   return (
     <div className="card-item rule-card">
       <div className="card-header">
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+        <div className="card-header-left">
           <span className={`badge ${statusBadgeClass}`}>{result.status}</span>
           <h4 className="card-title">Rule: {result.ruleId}</h4>
           {result.severity && (
@@ -26,7 +26,7 @@ export function RuleCardView({ card, currentRule }: RuleCardViewProps) {
           )}
         </div>
       </div>
-      <p style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>
+      <p className="rule-card-reason">
         {result.reason}
       </p>
     </div>

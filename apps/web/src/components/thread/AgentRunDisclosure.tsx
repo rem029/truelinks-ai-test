@@ -51,15 +51,15 @@ export function AgentRunDisclosure({ agentRun }: AgentRunDisclosureProps) {
           {agentRun.toolCalls.map((call, idx) => (
             <div key={idx} className="agent-tool-item">
               <div>
-                <span style={{ fontWeight: 600 }}>{call.name}</span>
+                <span className="agent-tool-name">{call.name}</span>
                 {call.args !== undefined && (
-                  <span style={{ color: 'var(--text-secondary)', marginLeft: '0.5rem' }}>
+                  <span className="agent-tool-args">
                     {formatShortArgs(call.args)}
                   </span>
                 )}
               </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
-                <span style={{ color: 'var(--text-muted)' }}>{call.ms}ms</span>
+              <div className="agent-tool-meta">
+                <span className="agent-tool-duration">{call.ms}ms</span>
                 <span className={`badge ${call.ok ? 'badge-pass' : 'badge-fail'}`}>
                   {call.ok ? 'ok' : 'error'}
                 </span>

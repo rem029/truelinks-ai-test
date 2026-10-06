@@ -78,6 +78,8 @@ export function FieldList({
         <tbody>
           {allFields.map(({ path, field }) => {
             const isEditingThis = editingPath === path;
+            // A unit must be picked from the list before it can be saved
+            const unitNotPicked = path === 'unit.unitId' && editValue === String(field.value ?? '');
             const isBooleanField =
               path.endsWith('.signed') || path === 'escalation.isDefined';
 
@@ -152,7 +154,7 @@ export function FieldList({
                         type="button"
                         className="btn btn-primary btn-sm"
                         onClick={() => handleSaveEdit(path)}
-                        disabled={submitting}
+                        disabled={submitting || unitNotPicked}
                       >
                         {submitting ? '...' : 'Save'}
                       </button>

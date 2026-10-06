@@ -190,7 +190,7 @@ export function IssueReportForm({ onSubmit, title = 'Report an issue' }: IssueRe
               accept="image/jpeg,image/png,image/webp"
               onChange={handlePhotoSelect}
               disabled={submitting || photos.length >= 6}
-              style={{ display: 'none' }}
+              hidden
             />
             <button
               type="button"

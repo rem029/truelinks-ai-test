@@ -18,8 +18,8 @@ export function ConfirmBar({ lease, review, onConfirm, disabled }: ConfirmBarPro
   if (isConfirmed) {
     return (
       <div className="confirm-bar">
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--pass-text)' }}>
-          <span style={{ fontWeight: 600 }}>✓ Lease confirmed</span>
+        <div className="confirm-bar-done">
+          <span className="confirm-bar-done-label">✓ Lease confirmed</span>
           {lease.unitId && <span>· Unit {lease.unitId} marked occupied</span>}
           {lease.overrideReason && <span>· Override: &ldquo;{lease.overrideReason}&rdquo;</span>}
         </div>
@@ -47,9 +47,9 @@ export function ConfirmBar({ lease, review, onConfirm, disabled }: ConfirmBarPro
   return (
     <div className="confirm-bar">
       <div className="confirm-bar-main">
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+        <div className="confirm-bar-status">
           {pending.length === 0 ? (
-            <span style={{ fontSize: '0.875rem', fontWeight: 500, color: 'var(--pass-text)' }}>
+            <span className="confirm-bar-ready">
               ✓ Ready to confirm
             </span>
           ) : (
@@ -87,7 +87,7 @@ export function ConfirmBar({ lease, review, onConfirm, disabled }: ConfirmBarPro
           <label className="confirm-override-label">
             High-severity rule failure requires override reason:
           </label>
-          <div style={{ fontSize: '0.75rem', color: 'var(--fail-text)', marginBottom: '0.25rem' }}>
+          <div className="confirm-override-failures">
             {failures.map((f) => `${f.ruleId}: ${f.reason}`).join(' | ')}
           </div>
           <textarea

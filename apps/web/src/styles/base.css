@@ -1,0 +1,164 @@
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-sans);
+  background-color: var(--bg-canvas);
+  color: var(--text-primary);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* Typography */
+h1, h2, h3, h4, p {
+  margin: 0;
+}
+
+code, pre {
+  font-family: var(--font-mono);
+}
+
+a {
+  color: var(--accent);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+a:hover {
+  color: var(--accent-hover);
+}
+
+/* Common Layout */
+.app-container {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Buttons */
+.btn {
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-sans);
+  font-size: 0.875rem;
+  font-weight: 500;
+  line-height: 1.25;
+  padding: 0.5rem 0.875rem;
+  border-radius: var(--radius-md);
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: background-color 0.15s ease, border-color 0.15s ease, opacity 0.15s ease;
+  white-space: nowrap;
+  user-select: none;
+}
+
+.btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.btn-primary {
+  background-color: var(--accent-fill);
+  color: var(--accent-contrast);
+}
+
+.btn-primary:hover:not(:disabled) {
+  background-color: var(--accent-fill-hover);
+}
+
+.btn-secondary {
+  background-color: var(--btn-secondary-bg);
+  color: var(--text-primary);
+  border-color: var(--border-strong);
+}
+
+.btn-secondary:hover:not(:disabled) {
+  background-color: var(--bg-surface-hover);
+  border-color: var(--border-strong);
+}
+
+.btn-subtle {
+  background: transparent;
+  color: var(--text-secondary);
+}
+
+.btn-subtle:hover:not(:disabled) {
+  background-color: var(--bg-subtle);
+  color: var(--text-primary);
+}
+
+.btn-sm {
+  font-size: 0.75rem;
+  padding: 0.25rem 0.5rem;
+}
+
+/* Badges */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  font-size: 0.75rem;
+  font-weight: 500;
+  padding: 0.125rem 0.45rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid transparent;
+  line-height: 1.2;
+}
+
+.badge-pass {
+  background-color: var(--pass-bg);
+  color: var(--pass-text);
+  border-color: var(--pass-border);
+}
+
+.badge-fail {
+  background-color: var(--fail-bg);
+  color: var(--fail-text);
+  border-color: var(--fail-border);
+}
+
+.badge-warn {
+  background-color: var(--warn-bg);
+  color: var(--warn-text);
+  border-color: var(--warn-border);
+}
+
+.badge-subtle {
+  background-color: var(--bg-subtle);
+  color: var(--text-secondary);
+  border-color: var(--border-subtle);
+}
+
+.badge-accent {
+  background-color: var(--accent-subtle);
+  color: var(--accent-text);
+  border-color: var(--accent-border);
+}
+
+/* Forms */
+input[type="text"],
+input[type="number"],
+select,
+textarea {
+  font-family: var(--font-sans);
+  font-size: 0.875rem;
+  color: var(--text-primary);
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: 0.5rem 0.75rem;
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  border-color: var(--accent);
+}

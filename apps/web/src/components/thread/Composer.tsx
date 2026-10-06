@@ -63,9 +63,8 @@ export function Composer({
         />
         <button
           type="submit"
-          className="btn btn-primary"
+          className="btn btn-primary composer-submit-btn"
           disabled={disabled || isRunning || !text.trim()}
-          style={{ height: '44px' }}
         >
           Send
         </button>
