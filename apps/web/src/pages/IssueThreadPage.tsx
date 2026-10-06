@@ -8,6 +8,7 @@ import {
   postIssueMessage,
 } from '../utils/api.ts';
 import { navigate, threadParent, toHash } from '../utils/router.ts';
+import { ArchiveActions } from '../components/ArchiveActions.tsx';
 import { CardRenderer } from '../components/cards/CardRenderer.tsx';
 import { IssueReportForm, type IssueReportFormData } from '../components/issue/IssueReportForm.tsx';
 import { Composer } from '../components/thread/Composer.tsx';
@@ -128,7 +129,9 @@ export function IssueThreadPage({ conversationId, initialData }: IssueThreadPage
 
   const { conversation, messages, issue, workOrder } = data;
   const hasIssue = Boolean(issue);
-  const isOpen = conversation.status === 'open';
+  const isArchived = conversation.archivedAt !== null;
+  const isOpen = conversation.status === 'open' && !isArchived;
+  const parentRoute = threadParent('issue', conversation.unitId);
   // Only the newest work order card takes actions; older ones show the draft as it was
   const latestWorkOrderMessageId = [...messages]
     .reverse()
@@ -142,14 +145,28 @@ export function IssueThreadPage({ conversationId, initialData }: IssueThreadPage
         {/* Header */}
         <header className="thread-header">
           <div className="thread-header-left">
-            <a className="btn btn-subtle btn-sm" href={toHash(threadParent('issue', conversation.unitId))}>
+            <a className="btn btn-subtle btn-sm" href={toHash(parentRoute)}>
               ← {conversation.unitId ?? 'Home'}
             </a>
             <div className="thread-title">
-              <h1 className="thread-heading">Issue report</h1>
+              <h1 className="thread-heading" tabIndex={-1}>Issue report</h1>
               <span className="badge badge-subtle">{conversation.status}</span>
+              {isArchived && <span className="badge badge-subtle">Archived</span>}
             </div>
           </div>
+          {hasIssue && (
+            <div className="thread-header-right">
+              <ArchiveActions
+                conversationId={conversation.id}
+                kind="issue"
+                archivedAt={conversation.archivedAt}
+                archiveBlockedReason={data.archiveBlockedReason}
+                itemName={workOrder?.title ?? 'Issue report'}
+                onChanged={refetch}
+                onDeleted={() => navigate(parentRoute)}
+              />
+            </div>
+          )}
         </header>
 
         {/* Content area */}
@@ -238,7 +255,9 @@ export function IssueThreadPage({ conversationId, initialData }: IssueThreadPage
             hasLease
             isConfirmed={!isOpen}
             placeholder={
-              !isOpen
+              isArchived
+                ? 'This report is archived. Unarchive it to make changes.'
+                : !isOpen
                 ? 'Work order accepted.'
                 : isRunning
                   ? 'Please wait for the response…'

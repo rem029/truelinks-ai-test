@@ -9,6 +9,7 @@ import type {
 import type { Repositories } from '../../db/repositories/index.ts';
 import { HttpError } from '../../utils/httpError.ts';
 import { listPendingItems, highSeverityFailures } from '../leases/review/pendingItems.ts';
+import { getArchiveBlockedReason } from './archiveConversation.ts';
 
 export type { ConversationDetails, ConversationReview };
 
@@ -34,6 +35,8 @@ export async function getConversation(
       }
     : null;
 
-  return { conversation, messages, documents, lease, review, issue, workOrder };
+  const archiveBlockedReason = await getArchiveBlockedReason(conversation, repositories);
+
+  return { conversation, messages, documents, lease, review, issue, workOrder, archiveBlockedReason };
 }
 

@@ -1,6 +1,7 @@
-import type { ConversationKind, ConversationSummary } from '@truelinks/shared';
+import type { ConversationKind, ConversationSummary, Lease } from '@truelinks/shared';
 import type { Repositories } from '../../db/repositories/index.ts';
 import { listPendingItems } from '../leases/review/pendingItems.ts';
+import { archiveBlockedReason, todayIso } from '../leases/unitLeases.ts';
 
 export interface ListConversationsFilter {
   kind?: ConversationKind;
@@ -15,6 +16,16 @@ export async function listConversations(
   // Note: N+1 query pattern per conversation (fetching docs & lease).
   // Fine for current scale; at scale join via a single optimized query or projection.
   const summaries: ConversationSummary[] = [];
+  const today = todayIso();
+  const confirmedByUnit = new Map<string, Lease[]>();
+  async function confirmedLeasesOf(unitId: string): Promise<Lease[]> {
+    let leases = confirmedByUnit.get(unitId);
+    if (!leases) {
+      leases = (await repositories.leases.listByUnit(unitId)).filter((l) => l.status === 'confirmed');
+      confirmedByUnit.set(unitId, leases);
+    }
+    return leases;
+  }
 
   for (const conv of conversations) {
     if (conv.kind === 'issue') {
@@ -37,6 +48,8 @@ export async function listConversations(
         workOrder: workOrder
           ? { title: workOrder.title, status: workOrder.status, severity: workOrder.severity, urgent: workOrder.urgent }
           : null,
+        archivedAt: conv.archivedAt,
+        archiveBlockedReason: null,
         createdAt: conv.createdAt,
         updatedAt: conv.updatedAt,
       });
@@ -60,6 +73,10 @@ export async function listConversations(
       openItems: lease ? listPendingItems(lease).length : null,
       photoCount: null,
       workOrder: null,
+      archivedAt: conv.archivedAt,
+      archiveBlockedReason: lease
+        ? archiveBlockedReason(lease, lease.unitId ? await confirmedLeasesOf(lease.unitId) : [], today)
+        : null,
       createdAt: conv.createdAt,
       updatedAt: conv.updatedAt,
     });

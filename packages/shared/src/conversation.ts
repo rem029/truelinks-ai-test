@@ -16,6 +16,8 @@ export const Conversation = z.object({
   kind: ConversationKind,
   unitId: z.string().nullable(),
   status: ConversationStatus,
+  // Set while the review is archived: hidden from the unit's lists, read-only, deletable
+  archivedAt: z.iso.datetime({ offset: true }).nullable(),
   createdAt: z.iso.datetime({ offset: true }),
   updatedAt: z.iso.datetime({ offset: true }),
 });
@@ -76,6 +78,8 @@ export const ConversationDetails = z.object({
   review: ConversationReview.nullable(),
   issue: Issue.nullable(),
   workOrder: WorkOrder.nullable(),
+  // Why it can't be archived (the unit's current or next lease), or null
+  archiveBlockedReason: z.string().nullable(),
 });
 export type ConversationDetails = z.infer<typeof ConversationDetails>;
 
@@ -121,6 +125,8 @@ export const ConversationSummary = z.object({
   openItems: z.number().int().nonnegative().nullable(),
   photoCount: z.number().int().nonnegative().nullable(),
   workOrder: WorkOrderSummary.nullable(),
+  archivedAt: z.iso.datetime({ offset: true }).nullable(),
+  archiveBlockedReason: z.string().nullable(),
   createdAt: z.iso.datetime({ offset: true }),
   updatedAt: z.iso.datetime({ offset: true }),
 });

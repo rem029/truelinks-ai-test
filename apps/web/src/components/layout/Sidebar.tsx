@@ -21,7 +21,7 @@ export function Sidebar({ route, currentUnitId, units, reviews, onUnitsChanged }
   const [starting, setStarting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const unassignedCount = reviews.filter((r) => r.kind === 'lease' && !r.unitId).length;
+  const unassignedCount = reviews.filter((r) => r.kind === 'lease' && !r.unitId && !r.archivedAt).length;
 
   async function handleNewLease() {
     setStarting(true);

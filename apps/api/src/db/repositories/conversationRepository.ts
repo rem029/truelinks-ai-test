@@ -14,6 +14,9 @@ export interface ConversationRepository {
   listMessages(conversationId: string): Promise<Message[]>;
   addMessage(message: Message): Promise<Message>;
   setStatus(id: string, status: ConversationStatus): Promise<Conversation>;
+  setArchivedAt(id: string, archivedAt: string | null): Promise<Conversation>;
+  // Removes the conversation and its messages; the caller removes what else hangs off it first
+  delete(id: string): Promise<void>;
 }
 
 function conversationToDomain(row: ConversationsTable): Conversation {
@@ -22,6 +25,7 @@ function conversationToDomain(row: ConversationsTable): Conversation {
     kind: row.kind,
     unitId: row.unit_id,
     status: row.status,
+    archivedAt: row.archived_at,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   });
@@ -50,6 +54,7 @@ export function createConversationRepository(db: Kysely<Database>): Conversation
           kind: conversation.kind,
           unit_id: conversation.unitId,
           status: conversation.status,
+          archived_at: conversation.archivedAt,
           created_at: conversation.createdAt,
           updated_at: conversation.updatedAt,
         })
@@ -122,6 +127,26 @@ export function createConversationRepository(db: Kysely<Database>): Conversation
       }
 
       return conversationToDomain(updated);
+    },
+
+    async setArchivedAt(id: string, archivedAt: string | null): Promise<Conversation> {
+      const updated = await db
+        .updateTable('conversations')
+        .set({ archived_at: archivedAt, updated_at: new Date().toISOString() })
+        .where('id', '=', id)
+        .returningAll()
+        .executeTakeFirst();
+
+      if (!updated) {
+        throw new Error(`Conversation ${id} not found`);
+      }
+
+      return conversationToDomain(updated);
+    },
+
+    async delete(id: string): Promise<void> {
+      await db.deleteFrom('messages').where('conversation_id', '=', id).execute();
+      await db.deleteFrom('conversations').where('id', '=', id).execute();
     },
   };
 }

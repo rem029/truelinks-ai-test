@@ -14,8 +14,8 @@ const CURRENT_DIR = new URL("../data/current-leases/", import.meta.url).pathname
 const LANDLORD = "Marina Crest Holdings W.L.L.";
 const LANDLORD_SIGNATORY = "Khalid Al-Mansoori, Leasing Director";
 
-const GEIST_REGULAR = resolve(import.meta.dirname, "../node_modules/geist/dist/fonts/geist-sans/Geist-Regular.ttf");
-const GEIST_BOLD = resolve(import.meta.dirname, "../node_modules/geist/dist/fonts/geist-sans/Geist-Bold.ttf");
+const GEIST_REGULAR = resolve(import.meta.dirname, "fonts/Geist-Regular.ttf");
+const GEIST_BOLD = resolve(import.meta.dirname, "fonts/Geist-Bold.ttf");
 const FIXED_CREATION_DATE = new Date("2026-10-01T00:00:00Z");
 
 const leases = [

@@ -36,6 +36,9 @@
 
   --fail-bg: #fef2f2;
   --fail-text: #991b1b;
+  /* Destructive fill: one deep red in both themes, with white text (6.5:1) */
+  --danger-fill: #b91c1c;
+  --danger-fill-hover: #991b1b;
   --fail-border: #fecaca;
 
   --warn-bg: #fffbeb;

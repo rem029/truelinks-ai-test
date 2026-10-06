@@ -13,6 +13,9 @@ export interface IssueRepository {
   getWorkOrderByIssue(issueId: string): Promise<WorkOrder | null>;
   updateWorkOrder(workOrder: WorkOrder): Promise<WorkOrder>;
   listWorkOrdersByUnit(unitId: string): Promise<WorkOrder[]>;
+  listWorkOrdersByLease(leaseId: string): Promise<WorkOrder[]>;
+  // Removes the issue and its work order
+  deleteIssue(issueId: string): Promise<void>;
 }
 
 function issueToDomain(row: IssuesTable): Issue {
@@ -180,6 +183,16 @@ export function createIssueRepository(db: Kysely<Database>): IssueRepository {
         .orderBy('created_at', 'desc')
         .execute();
       return rows.map(workOrderToDomain);
+    },
+
+    async listWorkOrdersByLease(leaseId: string): Promise<WorkOrder[]> {
+      const rows = await db.selectFrom('work_orders').selectAll().where('lease_id', '=', leaseId).execute();
+      return rows.map(workOrderToDomain);
+    },
+
+    async deleteIssue(issueId: string): Promise<void> {
+      await db.deleteFrom('work_orders').where('issue_id', '=', issueId).execute();
+      await db.deleteFrom('issues').where('id', '=', issueId).execute();
     },
   };
 }

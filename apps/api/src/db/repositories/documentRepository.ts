@@ -11,6 +11,8 @@ export interface DocumentRepository {
   create(document: LeaseDocument, filePath: string): Promise<LeaseDocument>;
   get(id: string): Promise<StoredDocument | null>;
   listByConversation(conversationId: string): Promise<LeaseDocument[]>;
+  // Returns the stored file paths, so the caller can remove the files once the delete commits
+  deleteByConversation(conversationId: string): Promise<string[]>;
 }
 
 function toDomain(row: DocumentsTable): LeaseDocument {
@@ -68,6 +70,15 @@ export function createDocumentRepository(db: Kysely<Database>): DocumentReposito
         .orderBy('created_at', 'asc')
         .execute();
       return rows.map(toDomain);
+    },
+
+    async deleteByConversation(conversationId: string): Promise<string[]> {
+      const rows = await db
+        .deleteFrom('documents')
+        .where('conversation_id', '=', conversationId)
+        .returning('file_path')
+        .execute();
+      return rows.map((row) => row.file_path);
     },
   };
 }

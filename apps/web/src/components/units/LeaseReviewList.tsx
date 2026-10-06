@@ -1,9 +1,11 @@
 import type { ConversationSummary } from '@truelinks/shared';
 import { toHash } from '../../utils/router.ts';
 import { formatShortDate } from '../../utils/formatters.ts';
+import { ArchiveActions } from '../ArchiveActions.tsx';
 
 export interface LeaseReviewListProps {
   reviews: ConversationSummary[];
+  onChanged: () => void;
 }
 
 function describeStatus(review: ConversationSummary): string {
@@ -13,11 +15,11 @@ function describeStatus(review: ConversationSummary): string {
   return `Draft · ${review.openItems} open ${review.openItems === 1 ? 'item' : 'items'}`;
 }
 
-export function LeaseReviewList({ reviews }: LeaseReviewListProps) {
+export function LeaseReviewList({ reviews, onChanged }: LeaseReviewListProps) {
   return (
     <ul className="review-list">
       {reviews.map((review) => (
-        <li key={review.id}>
+        <li key={review.id} className="review-item">
           <a className="review-row" href={toHash({ name: 'thread', conversationId: review.id })}>
             <span className="review-row-main">
               <span className="review-row-title review-row-file">{review.filename ?? 'Lease review'}</span>
@@ -29,6 +31,15 @@ export function LeaseReviewList({ reviews }: LeaseReviewListProps) {
               </span>
             </span>
           </a>
+          <ArchiveActions
+            conversationId={review.id}
+            kind="lease"
+            archivedAt={review.archivedAt}
+            archiveBlockedReason={review.archiveBlockedReason}
+            itemName={review.filename ?? 'lease review'}
+            onChanged={onChanged}
+            onDeleted={onChanged}
+          />
         </li>
       ))}
     </ul>

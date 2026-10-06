@@ -53,6 +53,9 @@ export async function reportIssue(
   if (conversation.kind !== 'issue' || !conversation.unitId) {
     throw new HttpError(400, 'Conversation must be an issue conversation with a unit assigned');
   }
+  if (conversation.archivedAt) {
+    throw new HttpError(409, 'This report is archived. Unarchive it to make changes.');
+  }
 
   // More photos can be added (e.g. a clearer one) until a work order has been drafted from them
   const existingIssue = await repositories.issues.getByConversation(conversationId);

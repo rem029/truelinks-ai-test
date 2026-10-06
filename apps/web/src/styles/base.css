@@ -96,6 +96,17 @@ a:hover {
   color: var(--text-primary);
 }
 
+.btn-danger {
+  background-color: var(--danger-fill);
+  border-color: var(--danger-fill);
+  color: #fff;
+}
+
+.btn-danger:hover:not(:disabled) {
+  background-color: var(--danger-fill-hover);
+  border-color: var(--danger-fill-hover);
+}
+
 .btn-sm {
   font-size: 0.75rem;
   padding: 0.25rem 0.5rem;

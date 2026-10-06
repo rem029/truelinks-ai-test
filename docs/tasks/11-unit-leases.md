@@ -38,11 +38,19 @@ Owner request: "archive if it's not active; once archived, only then we can dele
 - **Delete** only an archived review: removes the conversation, messages, uploaded file and lease record, after an in-app confirmation. Refused (409) while a work order references the lease, so a repair keeps the lease it was judged against.
 - Conversation status gains `archived` (migration); deleting is a hard delete in one transaction, file removed after commit.
 ### Tasks
-- [ ] `archived` status + archive/unarchive/delete endpoints with the rules above
-- [ ] UI: archive/unarchive/delete actions on the lease thread and review rows; Archived filter
-- [ ] e2e: archive a draft, delete it; active lease can't be archived
+- [x] archive/unarchive/delete endpoints with the rules above
+- [x] UI: archive/unarchive/delete on every lease and issue row and in the thread header, each confirmed in a modal; "Show archived" on both unit tabs and Unassigned
+- [x] e2e: archive a draft, delete it; active lease can't be archived
 ### Results
--
+- **Archived is a column, not a status** (migration 007 `conversations.archived_at`): unarchiving restores the review exactly as it was (draft or confirmed), with nothing to remember. Changed from the plan's `archived` status for that reason.
+- `POST /conversations/:id/archive` / `unarchive`, `DELETE /conversations/:id` (service below). Archive: a lease draft always; a confirmed lease only once it has ended; the unit's current or next lease → 409 naming which. Delete: archived only (409 otherwise); 409 when a work order references the lease; rows go in one transaction (lease, documents, messages, conversation), files removed after commit.
+- An archived review is read-only: card actions and messages return 409, the thread hides the confirm bar and disables the composer.
+- UI (after owner feedback): Archive / Unarchive / Delete on the right of every lease and issue row, and in the thread header. Each opens a confirmation modal (`ConfirmDialog`, native `<dialog>`), which also shows the API's refusal. Archived items leave the lists and sidebar count and show under "Show archived" on both tabs and Unassigned.
+- Issue reports archive and delete too (owner asked for it on the Issues tab): archive any time; delete removes the issue, work order, messages and the photo folder. Service moved to `services/conversations/archiveConversation.ts`.
+- `.btn-danger` moved from settings.css to base.css now that it's shared.
+- Impeccable critique (25/40; detector clean) and the fixes applied: the modal names its subject (file or work order title); after a refusal it offers only Close; Archive isn't offered on the unit's current or next lease (`archiveBlockedReason` from the pure `unitLeases.archiveBlockedReason`, on summaries and thread details); a deep red `--danger-fill` in both themes (dark mode used a pastel pink); row actions set apart by a hairline with bordered 32px buttons (44px on phones); a polite status notice ("Lease review archived: …", `components/Notice.tsx`, a small context instead of adding zustand); focus moves to the page heading after the row goes; dialog title ids from `useId` (they were duplicated per row).
+- e2e `archive-leases.spec.ts` (2 tests) + issue archive at the end of `issue-report.spec.ts`; suite 9/9. The work-order 409 was checked by reading the code (no dev work order references a lease).
+- Also in this change: the `geist` package was replaced by the two Geist font files in `scripts/fonts/` (OFL licence alongside), since the package pulls in Next.js as a peer dependency.
 
 ## Phase 3 — Status filters on the unit tabs
 Owner request: filter lease records and issues by status so a conversation is found without scrolling.

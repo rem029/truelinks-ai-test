@@ -12,6 +12,7 @@ import { extractLease } from '../services/leases/extract/extractLease.ts';
 import { analyzeLease } from '../services/leases/extract/analyzeLease.ts';
 import { addFirstReviewMessage } from '../services/leases/review/reviewMessage.ts';
 import { applyAction, postMessage } from '../services/conversations/conversationTurn.ts';
+import { archiveConversation, deleteConversation, unarchiveConversation } from '../services/conversations/archiveConversation.ts';
 import { HttpError } from '../utils/httpError.ts';
 
 const CreateConversationBody = z.object({
@@ -100,6 +101,22 @@ export function createConversationsRouter(
     const { text } = PostMessageBody.parse(req.body);
     const outcome = await postMessage(conversationId, text, { repositories, modelProvider });
     res.json(outcome);
+  });
+
+  router.post('/conversations/:id/archive', async (req, res) => {
+    const { id } = ConversationParams.parse(req.params);
+    res.json(await archiveConversation(id, repositories));
+  });
+
+  router.post('/conversations/:id/unarchive', async (req, res) => {
+    const { id } = ConversationParams.parse(req.params);
+    res.json(await unarchiveConversation(id, repositories));
+  });
+
+  router.delete('/conversations/:id', async (req, res) => {
+    const { id } = ConversationParams.parse(req.params);
+    await deleteConversation(id, repositories, uploadDir);
+    res.status(204).end();
   });
 
   return router;

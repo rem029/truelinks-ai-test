@@ -56,6 +56,9 @@ async function request<T>(
     }
     throw new ApiError(message, res.status, details);
   }
+  if (res.status === 204) {
+    return undefined as T;
+  }
   const json = await res.json();
   return schema ? schema.parse(json) : (json as T);
 }
@@ -183,6 +186,19 @@ export async function restoreRulesetVersion(version: string): Promise<Ruleset> {
 export async function listConversations(kind?: ConversationKind): Promise<ConversationSummary[]> {
   const query = kind ? `?kind=${encodeURIComponent(kind)}` : '';
   return request(`/api/conversations${query}`, undefined, z.array(ConversationSummary));
+}
+
+export async function archiveConversation(id: string): Promise<Conversation> {
+  return postJson(`/api/conversations/${encodeURIComponent(id)}/archive`, {}, Conversation);
+}
+
+export async function unarchiveConversation(id: string): Promise<Conversation> {
+  return postJson(`/api/conversations/${encodeURIComponent(id)}/unarchive`, {}, Conversation);
+}
+
+// Permanent; the API only deletes an archived lease review
+export async function deleteConversation(id: string): Promise<void> {
+  return request(`/api/conversations/${encodeURIComponent(id)}`, { method: 'DELETE' });
 }
 
 export async function reportIssue(

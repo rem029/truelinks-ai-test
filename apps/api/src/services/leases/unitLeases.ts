@@ -65,6 +65,18 @@ export function findDuplicate(record: LeaseRecord, confirmedLeases: Lease[]): Le
   );
 }
 
+// Why a lease can't be archived, or null when it can. A draft always can; a confirmed lease only
+// once it has ended, so the unit's current and next lease stay on record.
+export function archiveBlockedReason(lease: Lease, confirmedLeases: Lease[], today: string): string | null {
+  if (lease.status !== 'confirmed') return null;
+  const { active, next } = placeUnitLeases(confirmedLeases, today);
+  if (lease.id === active?.id) return "This is the unit's current lease, so it can't be archived";
+  if (lease.id === next?.id) return "This is the unit's next lease, so it can't be archived";
+  const term = leaseTerm(lease.record);
+  if (!term || term.end >= today) return 'A confirmed lease can be archived only after it has ended';
+  return null;
+}
+
 export function describeLease(lease: Lease): string {
   const tenant = lease.record.tenant.name.value ?? 'unnamed tenant';
   const term = leaseTerm(lease.record);

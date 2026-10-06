@@ -109,9 +109,10 @@ export function App() {
             tab={route.tab}
             unit={units.find((u) => u.unitId === route.unitId)}
             reviews={reviews}
+            onChanged={reload}
           />
         )}
-        {route.name === 'unassigned' && <UnassignedPage reviews={reviews} />}
+        {route.name === 'unassigned' && <UnassignedPage reviews={reviews} onChanged={reload} />}
         {route.name === 'report' && (
           <ReportPage key={route.unitId ?? ''} units={units} initialUnitId={route.unitId} />
         )}

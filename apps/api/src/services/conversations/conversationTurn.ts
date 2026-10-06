@@ -17,6 +17,9 @@ async function kindOf(conversationId: string, repositories: Repositories) {
   if (!conversation) {
     throw new HttpError(404, `Conversation ${conversationId} not found`);
   }
+  if (conversation.archivedAt) {
+    throw new HttpError(409, 'This is archived. Unarchive it to make changes.');
+  }
   return conversation.kind;
 }
 

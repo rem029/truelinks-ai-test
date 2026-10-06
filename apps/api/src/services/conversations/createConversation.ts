@@ -27,6 +27,7 @@ export async function createConversation(
     kind,
     unitId: unitId ?? null,
     status: 'open',
+    archivedAt: null,
     createdAt: now,
     updatedAt: now,
   };

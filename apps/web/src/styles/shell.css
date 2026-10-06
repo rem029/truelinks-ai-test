@@ -205,21 +205,50 @@
   gap: 0.5rem;
 }
 
+/* The row's link and its archive actions share one card; actions sit outside the link */
+.review-item {
+  display: flex;
+  align-items: center;
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+
+.review-item:has(.review-row:hover) {
+  background-color: var(--bg-surface-hover);
+}
+
+/* Set apart from the badges by a hairline, so Archive doesn't read as one more status */
+.review-item > .archive-actions {
+  flex-shrink: 0;
+  align-self: stretch;
+  display: flex;
+  align-items: center;
+  padding: 0 0.625rem;
+  border-left: 1px solid var(--border-subtle);
+}
+
+.review-item > .archive-actions .btn {
+  min-height: 2rem;
+  border-color: var(--border-subtle);
+}
+
+.review-item > .archive-actions .btn:hover:not(:disabled),
+.review-item > .archive-actions .btn:focus-visible {
+  border-color: var(--border-strong);
+}
+
 .review-row {
+  flex: 1;
+  min-width: 0;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 1rem;
   padding: 0.75rem 1rem;
-  background-color: var(--bg-surface);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-md);
   color: var(--text-primary);
   text-decoration: none;
-}
-
-.review-row:hover {
-  background-color: var(--bg-surface-hover);
 }
 
 .review-row-main {
@@ -394,4 +423,91 @@
     align-items: stretch;
     gap: 0.5rem;
   }
+
+  .review-item > .archive-actions .btn {
+    min-height: 2.75rem;
+  }
+}
+
+.archived-reviews {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.75rem;
+  margin-top: 1.25rem;
+}
+
+.archived-reviews .review-list {
+  width: 100%;
+}
+
+.confirm-dialog {
+  width: min(420px, calc(100vw - 2rem));
+  padding: 1.25rem 1.5rem;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-lg);
+  background-color: var(--bg-surface);
+  color: var(--text-primary);
+  box-shadow: 0 12px 32px -8px rgba(0, 0, 0, 0.25);
+}
+
+.confirm-dialog::backdrop {
+  background-color: rgba(20, 18, 16, 0.5);
+}
+
+.confirm-dialog-title {
+  margin: 0 0 0.5rem;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.confirm-dialog-subject {
+  margin: 0 0 0.75rem;
+  font-family: var(--font-mono);
+  font-size: 0.8125rem;
+  color: var(--text-primary);
+  overflow-wrap: anywhere;
+}
+
+.confirm-dialog-message {
+  margin: 0 0 1rem;
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+.confirm-dialog .form-error-alert {
+  margin: 0 0 1rem;
+}
+
+.confirm-dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+}
+
+.btn-subtle-danger {
+  color: var(--fail-text);
+}
+
+/* Bottom-centre confirmation after an archive or delete; announced politely, gone after 4s */
+.notice-region {
+  position: fixed;
+  left: 50%;
+  bottom: 1.5rem;
+  transform: translateX(-50%);
+  z-index: 20;
+  pointer-events: none;
+}
+
+.notice {
+  margin: 0;
+  max-width: min(480px, calc(100vw - 2rem));
+  padding: 0.625rem 1rem;
+  border-radius: var(--radius-md);
+  background-color: var(--text-primary);
+  color: var(--bg-surface);
+  font-size: 0.875rem;
+  box-shadow: 0 8px 24px -8px rgba(0, 0, 0, 0.3);
+  overflow-wrap: anywhere;
 }

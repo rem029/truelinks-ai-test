@@ -8,6 +8,7 @@ export interface LeaseRepository {
   getByConversation(conversationId: string): Promise<Lease | null>;
   listByUnit(unitId: string): Promise<Lease[]>;
   update(lease: Lease): Promise<Lease>;
+  delete(id: string): Promise<void>;
 }
 
 function toDomain(row: LeasesTable): Lease {
@@ -102,6 +103,10 @@ export function createLeaseRepository(db: Kysely<Database>): LeaseRepository {
       }
 
       return toDomain(updated);
+    },
+
+    async delete(id: string): Promise<void> {
+      await db.deleteFrom('leases').where('id', '=', id).execute();
     },
   };
 }
