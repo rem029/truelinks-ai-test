@@ -1,15 +1,20 @@
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
-import type { Flag, Lease, LeaseDocument, LeaseRecord } from '@truelinks/shared';
+import type { Flag, Lease, LeaseDocument, LeaseRecord, Rule, RuleResult } from '@truelinks/shared';
 import { listFields } from '../leaseFields.ts';
 import { LeaseAnalysis } from './extractionSchema.ts';
 import { buildAnalysisFlags } from './analysisFlags.ts';
+import { buildOwnerRuleResults } from './ownerRuleResults.ts';
 import { formatClausesForModel, type ExtractLeaseContext } from './extractLease.ts';
 import { reevaluateLease } from '../review/reevaluateLease.ts';
 import { addReviewMessage } from '../review/reviewMessage.ts';
 
 const PROMPT_PATH = resolve(import.meta.dirname, '../../agents/prompts/leaseAnalysis.md');
 const LEASE_ANALYSIS_PROMPT = readFileSync(PROMPT_PATH, 'utf-8');
+
+function formatOwnerRules(rules: Rule[]): string {
+  return rules.length > 0 ? rules.map((r) => `${r.id}: ${r.description}`).join('\n') : 'none';
+}
 
 function formatExtractedValues(record: LeaseRecord): string {
   return listFields(record)
@@ -26,7 +31,11 @@ export async function analyzeLease(lease: Lease, document: LeaseDocument, contex
   const startTime = Date.now();
   const { repositories, modelProvider } = context;
 
+  const ruleset = await repositories.rulesets.getLatest();
+  const aiRules = ruleset?.rules.filter((r) => r.kind === 'ai') ?? [];
+
   let analysisFlags: Flag[];
+  let ownerRuleResults: RuleResult[] = [];
   let analysisStatus: 'done' | 'failed';
   try {
     const result = await modelProvider.complete({
@@ -35,7 +44,7 @@ export async function analyzeLease(lease: Lease, document: LeaseDocument, contex
         { role: 'system', content: LEASE_ANALYSIS_PROMPT },
         {
           role: 'user',
-          content: `Document: ${document.filename}\n\nExtracted values:\n${formatExtractedValues(lease.record)}\n\nClauses:\n${formatClausesForModel(document)}`,
+          content: `Document: ${document.filename}\n\nOwner rules:\n${formatOwnerRules(aiRules)}\n\nExtracted values:\n${formatExtractedValues(lease.record)}\n\nClauses:\n${formatClausesForModel(document)}`,
         },
       ],
       responseSchema: LeaseAnalysis,
@@ -44,6 +53,9 @@ export async function analyzeLease(lease: Lease, document: LeaseDocument, contex
       throw new Error('Model returned no analysis');
     }
     analysisFlags = buildAnalysisFlags(result.output, document.clauses);
+    if (ruleset) {
+      ownerRuleResults = buildOwnerRuleResults(result.output.ownerRules ?? [], aiRules, document.clauses, ruleset.version);
+    }
     analysisStatus = 'done';
   } catch (err) {
     const reason = err instanceof Error ? err.message : String(err);
@@ -72,6 +84,11 @@ export async function analyzeLease(lease: Lease, document: LeaseDocument, contex
   const updated = await repositories.leases.update({
     ...current,
     flags: [...current.flags, ...newFlags],
+    // Re-evaluation keeps these (plain-language rules are only judged here)
+    ruleResults: [
+      ...current.ruleResults.filter((r) => !ownerRuleResults.some((o) => o.ruleId === r.ruleId)),
+      ...ownerRuleResults,
+    ],
     analysisStatus,
     updatedAt: new Date().toISOString(),
   });
@@ -95,7 +112,7 @@ export async function analyzeLease(lease: Lease, document: LeaseDocument, contex
   }
 
   console.log(
-    `lease analyze lease=${lease.id} status=${analysisStatus} flags=${analysisFlags.length} ms=${Date.now() - startTime}`
+    `lease analyze lease=${lease.id} status=${analysisStatus} flags=${analysisFlags.length} ownerRules=${ownerRuleResults.length} ms=${Date.now() - startTime}`
   );
   return updated;
 }

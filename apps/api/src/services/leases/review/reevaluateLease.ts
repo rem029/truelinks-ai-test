@@ -18,6 +18,7 @@ export async function reevaluateLease(
       record: lease.record,
       pageUnitId: conversation?.unitId,
       document: latestDoc,
+      previousResults: lease.ruleResults,
     },
     repositories
   );

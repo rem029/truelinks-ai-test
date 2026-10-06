@@ -16,6 +16,7 @@ export interface RulesetsTable {
   name: string;
   rules_json: string;
   created_at: string;
+  change_note: string;
 }
 
 export interface ConversationsTable {

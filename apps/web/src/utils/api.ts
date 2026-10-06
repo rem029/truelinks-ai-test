@@ -12,6 +12,11 @@ import {
   type ReporterRole,
   ReportIssueResponse,
   WorkOrderTurnResponse,
+  Ruleset,
+  RulesetVersion,
+  type NewRule,
+  type RuleEdit,
+  type NewUnit,
 } from '@truelinks/shared';
 
 export class ApiError extends Error {
@@ -130,6 +135,44 @@ export function getDocumentFileUrl(documentId: string, page?: number | null): st
 
 export async function getUnits(): Promise<Unit[]> {
   return request('/api/units', undefined, z.array(Unit));
+}
+
+function postJson<T>(url: string, body: unknown, schema: { parse: (val: unknown) => T }): Promise<T> {
+  return request(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }, schema);
+}
+
+export async function addUnit(unit: NewUnit): Promise<Unit> {
+  return postJson('/api/units', unit, Unit);
+}
+
+export async function getCurrentRuleset(): Promise<Ruleset> {
+  return request('/api/rulesets/current', undefined, Ruleset);
+}
+
+// Saves a new ruleset version with the rule added
+export async function addRule(rule: NewRule): Promise<Ruleset> {
+  return postJson('/api/rulesets/current/rules', rule, Ruleset);
+}
+
+export async function listRulesetVersions(): Promise<RulesetVersion[]> {
+  return request('/api/rulesets', undefined, z.array(RulesetVersion));
+}
+
+export async function editRule(ruleId: string, edit: RuleEdit): Promise<Ruleset> {
+  return request(
+    `/api/rulesets/current/rules/${encodeURIComponent(ruleId)}`,
+    { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(edit) },
+    Ruleset
+  );
+}
+
+export async function deleteRule(ruleId: string): Promise<Ruleset> {
+  return request(`/api/rulesets/current/rules/${encodeURIComponent(ruleId)}`, { method: 'DELETE' }, Ruleset);
+}
+
+// Saves a copy of an old version as the new current one
+export async function restoreRulesetVersion(version: string): Promise<Ruleset> {
+  return postJson(`/api/rulesets/${encodeURIComponent(version)}/restore`, {}, Ruleset);
 }
 
 export async function listConversations(kind?: ConversationKind): Promise<ConversationSummary[]> {

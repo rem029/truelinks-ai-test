@@ -74,6 +74,16 @@ export const ExtractionConcern = z.object({
 });
 export type ExtractionConcern = z.infer<typeof ExtractionConcern>;
 
+// The model's verdict on one of the owner's plain-language rules; code verifies the quote before using it
+export const OwnerRuleJudgement = z.object({
+  ruleId: z.string(),
+  status: z.enum(['PASS', 'FAIL', 'NOT_DETERMINABLE']),
+  reason: z.string(),
+  clauseId: z.string().nullable(),
+  quote: z.string().nullable(),
+});
+export type OwnerRuleJudgement = z.infer<typeof OwnerRuleJudgement>;
+
 // Fast pass during upload: only the fields, so the owner can start reviewing quickly
 export const LeaseExtraction = z.object({
   fields: ExtractedFields,
@@ -84,5 +94,6 @@ export type LeaseExtraction = z.infer<typeof LeaseExtraction>;
 export const LeaseAnalysis = z.object({
   conflicts: z.array(ExtractionConflict),
   concerns: z.array(ExtractionConcern),
+  ownerRules: z.array(OwnerRuleJudgement).optional(),
 });
 export type LeaseAnalysis = z.infer<typeof LeaseAnalysis>;

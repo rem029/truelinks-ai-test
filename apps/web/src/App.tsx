@@ -82,7 +82,7 @@ export function App() {
   }, []);
 
   const routeKey = toHash(route);
-  const { units, reviews, error } = useWorkspace(routeKey);
+  const { units, reviews, error, reload } = useWorkspace(routeKey);
 
   const currentUnitId =
     route.name === 'unit' || route.name === 'report'
@@ -93,7 +93,7 @@ export function App() {
 
   return (
     <div className="app-shell">
-      <Sidebar route={route} currentUnitId={currentUnitId} units={units} reviews={reviews} />
+      <Sidebar route={route} currentUnitId={currentUnitId} units={units} reviews={reviews} onUnitsChanged={reload} />
       <main className="app-main">
         {error && (
           <div className="form-error-alert" role="alert">

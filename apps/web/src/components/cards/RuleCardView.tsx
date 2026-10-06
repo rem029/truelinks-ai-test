@@ -24,6 +24,7 @@ export function RuleCardView({ card, currentRule }: RuleCardViewProps) {
           {result.severity && (
             <span className="badge badge-subtle">{result.severity}</span>
           )}
+          {result.checkedBy === 'ai' && <span className="badge badge-subtle">checked by AI</span>}
         </div>
       </div>
       <p className="rule-card-reason">

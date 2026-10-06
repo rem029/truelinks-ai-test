@@ -3,6 +3,8 @@ import type { ConversationSummary, Unit } from '@truelinks/shared';
 import { startLeaseReview } from '../../utils/startLeaseReview.ts';
 import { navigate, toHash, type Route } from '../../utils/router.ts';
 import { ThemeToggle } from '../ThemeToggle.tsx';
+import { SettingsDialog } from '../settings/SettingsDialog.tsx';
+import { GearIcon } from '../icons.tsx';
 
 export interface SidebarProps {
   route: Route;
@@ -10,10 +12,12 @@ export interface SidebarProps {
   currentUnitId: string | null;
   units: Unit[];
   reviews: ConversationSummary[];
+  onUnitsChanged: () => void;
 }
 
-export function Sidebar({ route, currentUnitId, units, reviews }: SidebarProps) {
+export function Sidebar({ route, currentUnitId, units, reviews, onUnitsChanged }: SidebarProps) {
   const [menuOpen, setMenuOpen] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
   const [starting, setStarting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -116,7 +120,13 @@ export function Sidebar({ route, currentUnitId, units, reviews }: SidebarProps) 
           )}
         </ul>
 
+        <div className="sidebar-footer">
+          <button type="button" className="sidebar-settings" onClick={() => setSettingsOpen(true)}>
+            <GearIcon /> Settings
+          </button>
+        </div>
       </nav>
+      <SettingsDialog open={settingsOpen} onClose={() => setSettingsOpen(false)} units={units} onUnitsChanged={onUnitsChanged} />
     </aside>
   );
 }

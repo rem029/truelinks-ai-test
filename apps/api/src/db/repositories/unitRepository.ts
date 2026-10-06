@@ -6,6 +6,7 @@ export interface UnitRepository {
   list(): Promise<Unit[]>;
   get(unitId: string): Promise<Unit | null>;
   setStatus(unitId: string, status: UnitStatus): Promise<Unit>;
+  create(unit: Unit): Promise<Unit>;
 }
 
 function toDomain(row: UnitsTable): Unit {
@@ -33,6 +34,26 @@ export function createUnitRepository(db: Kysely<Database>): UnitRepository {
     async get(unitId: string): Promise<Unit | null> {
       const row = await db.selectFrom('units').selectAll().where('unit_id', '=', unitId).executeTakeFirst();
       return row ? toDomain(row) : null;
+    },
+
+    async create(unit: Unit): Promise<Unit> {
+      const row = await db
+        .insertInto('units')
+        .values({
+          unit_id: unit.unitId,
+          label: unit.label,
+          type: unit.type,
+          area_sqm: unit.areaSqm,
+          parking_bay: unit.parkingBay,
+          status: unit.status,
+          building_id: unit.buildingId,
+          building_name: unit.buildingName,
+          property_id: unit.propertyId,
+          property_name: unit.propertyName,
+        })
+        .returningAll()
+        .executeTakeFirstOrThrow();
+      return toDomain(row);
     },
 
     async setStatus(unitId: string, status: UnitStatus): Promise<Unit> {

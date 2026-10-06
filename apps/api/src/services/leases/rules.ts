@@ -3,6 +3,7 @@ import { monthsBetween } from './leaseTerm.ts';
 import { monthlyRent, compareAnnualRent } from './rent.ts';
 import { formatMoney, getClauseIds } from './leaseFields.ts';
 import { type UnitMatch, unitNotFoundReason } from './unitMatch.ts';
+import { checkComparison } from './comparisonRule.ts';
 
 interface CheckContext {
   record: LeaseRecord;
@@ -307,32 +308,30 @@ export function evaluateRules(input: {
   record: LeaseRecord;
   unitMatch: UnitMatch;
   ruleset: Ruleset;
+  // Results already on the lease: plain-language rules are judged by the background analysis, not here
+  previousResults?: RuleResult[];
 }): RuleResult[] {
-  return input.ruleset.rules.map((rule) => {
-    const check = ruleChecks[rule.id];
-    if (!check) {
-      return {
-        ruleId: rule.id,
-        status: 'NOT_DETERMINABLE' as const,
-        reason: `No check implemented for rule ${rule.id}`,
-        clauseIds: [],
-        severity: rule.severity,
-        rulesetVersion: input.ruleset.version,
-      };
+  return input.ruleset.rules.map((rule): RuleResult => {
+    const base = { ruleId: rule.id, severity: rule.severity, rulesetVersion: input.ruleset.version };
+
+    if (rule.kind === 'ai') {
+      const previous = input.previousResults?.find((r) => r.ruleId === rule.id && r.checkedBy === 'ai');
+      return previous
+        ? { ...previous, ...base }
+        : { ...base, status: 'NOT_DETERMINABLE', reason: 'Not checked by the AI yet (it runs in the full review after upload)', clauseIds: [], checkedBy: 'ai' };
     }
 
-    const { status, reason, clauseIds } = check({
-      record: input.record,
-      unitMatch: input.unitMatch,
-    });
+    if (rule.kind === 'comparison') {
+      if (!rule.comparison) {
+        return { ...base, status: 'NOT_DETERMINABLE', reason: 'Rule has no comparison', clauseIds: [], checkedBy: 'code' };
+      }
+      return { ...base, ...checkComparison(rule.comparison, input.record), checkedBy: 'code' };
+    }
 
-    return {
-      ruleId: rule.id,
-      status,
-      reason,
-      clauseIds,
-      severity: rule.severity,
-      rulesetVersion: input.ruleset.version,
-    };
+    const check = ruleChecks[rule.id];
+    if (!check) {
+      return { ...base, status: 'NOT_DETERMINABLE', reason: `No check implemented for rule ${rule.id}`, clauseIds: [], checkedBy: 'code' };
+    }
+    return { ...base, ...check({ record: input.record, unitMatch: input.unitMatch }), checkedBy: 'code' };
   });
 }

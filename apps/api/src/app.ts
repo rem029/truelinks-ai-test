@@ -3,6 +3,7 @@ import { requestLog } from './middleware/requestLog.ts';
 import { errorHandler } from './middleware/errorHandler.ts';
 import { createHealthRouter } from './routes/health.ts';
 import { createUnitsRouter } from './routes/units.ts';
+import { createRulesetsRouter } from './routes/rulesets.ts';
 import { createConversationsRouter } from './routes/conversations.ts';
 import { createDocumentsRouter } from './routes/documents.ts';
 import { createIssuesRouter } from './routes/issues.ts';
@@ -23,7 +24,8 @@ export function createApp(deps: AppDependencies) {
 
   const apiRouter = Router();
   apiRouter.use(createHealthRouter(deps.modelProvider));
-  apiRouter.use(createUnitsRouter(deps.repositories.units));
+  apiRouter.use(createUnitsRouter(deps.repositories));
+  apiRouter.use(createRulesetsRouter(deps.repositories));
   apiRouter.use(createConversationsRouter(deps.repositories, deps.uploadDir, deps.modelProvider));
   apiRouter.use(createIssuesRouter(deps.repositories, deps.uploadDir, deps.modelProvider));
   apiRouter.use(createDocumentsRouter(deps.repositories, deps.uploadDir));

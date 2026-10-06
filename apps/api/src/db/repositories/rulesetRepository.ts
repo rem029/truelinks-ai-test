@@ -1,11 +1,13 @@
 import type { Kysely } from 'kysely';
-import { Ruleset } from '@truelinks/shared';
+import { Ruleset, RulesetVersion } from '@truelinks/shared';
 import type { Database, RulesetsTable } from '../schema.ts';
 
 export interface RulesetRepository {
   getLatest(): Promise<Ruleset | null>;
   get(version: string): Promise<Ruleset | null>;
-  create(ruleset: Ruleset): Promise<Ruleset>;
+  // Every saved version, newest first
+  listVersions(): Promise<RulesetVersion[]>;
+  create(ruleset: Ruleset, changeNote: string): Promise<Ruleset>;
 }
 
 function toDomain(row: RulesetsTable): Ruleset {
@@ -39,7 +41,19 @@ export function createRulesetRepository(db: Kysely<Database>): RulesetRepository
       return row ? toDomain(row) : null;
     },
 
-    async create(ruleset: Ruleset): Promise<Ruleset> {
+    async listVersions(): Promise<RulesetVersion[]> {
+      const rows = await db
+        .selectFrom('rulesets')
+        .selectAll()
+        .orderBy('created_at', 'desc')
+        .orderBy('version', 'desc')
+        .execute();
+      return rows.map((row) =>
+        RulesetVersion.parse({ ...toDomain(row), createdAt: row.created_at, changeNote: row.change_note })
+      );
+    },
+
+    async create(ruleset: Ruleset, changeNote: string): Promise<Ruleset> {
       await db
         .insertInto('rulesets')
         .values({
@@ -47,6 +61,7 @@ export function createRulesetRepository(db: Kysely<Database>): RulesetRepository
           name: ruleset.name,
           rules_json: JSON.stringify(ruleset.rules),
           created_at: new Date().toISOString(),
+          change_note: changeNote,
         })
         .execute();
 

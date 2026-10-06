@@ -117,6 +117,7 @@ export async function seed(db: Kysely<Database>): Promise<SeedResult> {
       name: domainRuleset.name,
       rules_json: JSON.stringify(domainRuleset.rules),
       created_at: new Date().toISOString(),
+      change_note: '',
     })
     .onConflict((oc) => oc.column('version').doNothing())
     .executeTakeFirst();

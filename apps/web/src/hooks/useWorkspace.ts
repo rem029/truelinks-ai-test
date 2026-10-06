@@ -2,16 +2,22 @@ import { useEffect, useState } from 'react';
 import type { ConversationSummary, Unit } from '@truelinks/shared';
 import { getUnits, listConversations } from '../utils/api.ts';
 
-export interface Workspace {
+interface WorkspaceData {
   units: Unit[];
   reviews: ConversationSummary[];
   error: string | null;
 }
 
+export interface Workspace extends WorkspaceData {
+  // For changes made outside a route change, e.g. a unit added in Settings
+  reload: () => void;
+}
+
 // Units and every lease review / issue report, shared by the sidebar and the unit pages.
 // Reloaded whenever the route changes, so a thread's latest status shows once you leave it.
 export function useWorkspace(routeKey: string): Workspace {
-  const [workspace, setWorkspace] = useState<Workspace>({ units: [], reviews: [], error: null });
+  const [workspace, setWorkspace] = useState<WorkspaceData>({ units: [], reviews: [], error: null });
+  const [reloadCount, setReloadCount] = useState(0);
 
   useEffect(() => {
     let active = true;
@@ -27,7 +33,7 @@ export function useWorkspace(routeKey: string): Workspace {
     return () => {
       active = false;
     };
-  }, [routeKey]);
+  }, [routeKey, reloadCount]);
 
-  return workspace;
+  return { ...workspace, reload: () => setReloadCount((n) => n + 1) };
 }

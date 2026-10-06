@@ -8,6 +8,7 @@ export interface EvaluateLeaseInput {
   record: LeaseRecord;
   pageUnitId?: string | null;
   document?: Pick<LeaseDocument, 'textSource' | 'clauseSplit'>;
+  previousResults?: RuleResult[];
 }
 
 export interface EvaluateLeaseResult {
@@ -34,6 +35,7 @@ export async function evaluateLease(
     record: input.record,
     unitMatch,
     ruleset,
+    previousResults: input.previousResults,
   });
   const flags = detectFlags({
     record: input.record,
