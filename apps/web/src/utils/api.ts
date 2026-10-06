@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import {
+  UnitLeases,
   Conversation,
   type ConversationKind,
   ConversationDetails,
@@ -135,6 +136,10 @@ export function getDocumentFileUrl(documentId: string, page?: number | null): st
 
 export async function getUnits(): Promise<Unit[]> {
   return request('/api/units', undefined, z.array(Unit));
+}
+
+export async function getUnitLeases(unitId: string): Promise<UnitLeases> {
+  return request(`/api/units/${encodeURIComponent(unitId)}/leases`, undefined, UnitLeases);
 }
 
 function postJson<T>(url: string, body: unknown, schema: { parse: (val: unknown) => T }): Promise<T> {

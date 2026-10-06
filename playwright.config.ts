@@ -23,7 +23,8 @@ export default defineConfig({
   projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
   webServer: {
     command: 'node -e "require(\'node:fs\').rmSync(\'var/e2e\',{recursive:true,force:true})" && npm run dev',
-    url: `http://localhost:${WEB_PORT}`,
+    // Through the web proxy, so both servers are up and the API has finished seeding
+    url: `http://localhost:${WEB_PORT}/api/health`,
     reuseExistingServer: false,
     timeout: 120_000,
     env: {

@@ -5,10 +5,12 @@
 import PDFDocument from "pdfkit";
 import { Document, Paragraph, TextRun, Packer } from "docx";
 import { renderPageAsImage, getDocumentProxy, extractText } from "unpdf";
-import { createWriteStream, writeFileSync } from "node:fs";
+import { createWriteStream, mkdirSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 
 const OUT_DIR = new URL("../data/sample-leases/", import.meta.url).pathname;
+// Leases already in effect on the occupied units; the API seeds them as confirmed records
+const CURRENT_DIR = new URL("../data/current-leases/", import.meta.url).pathname;
 const LANDLORD = "Marina Crest Holdings W.L.L.";
 const LANDLORD_SIGNATORY = "Khalid Al-Mansoori, Leasing Director";
 
@@ -108,8 +110,47 @@ const leases = [
   },
 ];
 
-function renderLease(lease) {
-  const filePath = join(OUT_DIR, lease.file);
+const currentLeases = [
+  {
+    file: "current-lease-MC-A-0302.pdf",
+    ref: "MCH-L-2025-0034",
+    tenant: "Elena Petrova",
+    tenantId: "QID 28264400812",
+    premises:
+      "Apartment 0302, Tower A, Marina Crest Residences, Lusail Marina District, Doha (Unit ID MC-A-0302), a three-bedroom apartment of approximately 156 sqm, together with parking bay A-13.",
+    clauses: [
+      ["Term", "The term of this Lease is twenty-four (24) months, commencing on 1 March 2025 (the \"Commencement Date\") and expiring on 28 February 2027 (the \"Expiry Date\")."],
+      ["Rent", "The Tenant shall pay rent of QAR 10,500 per month, payable monthly in advance on the first day of each month. The annual rent is QAR 126,000."],
+      ["Security Deposit", "On signing, the Tenant shall pay a security deposit of QAR 10,500, refundable within thirty (30) days of the end of the Lease, less any amounts properly deducted for unpaid rent or damage beyond fair wear and tear."],
+      ["Rent Escalation", "The monthly rent shall increase by five percent (5%) on each anniversary of the Commencement Date."],
+      ["Renewal", "The Tenant may renew this Lease for a further twelve (12) months by giving written notice not less than sixty (60) days before the Expiry Date."],
+      ["Termination", "Either party may terminate this Lease by giving two (2) months' written notice after the first twelve (12) months of the term."],
+      ["Maintenance", "The Landlord is responsible for structural repairs and major equipment, including air-conditioning units and the water heater. The Tenant is responsible for minor repairs under QAR 500, such as dripping taps and light fittings."],
+    ],
+    signatures: { landlord: "2025-02-15", tenant: "2025-02-15" },
+  },
+  {
+    file: "current-lease-MC-B-1205.pdf",
+    ref: "MCH-L-2025-0071",
+    tenant: "Thomas Reyes",
+    tenantId: "QID 27940012345",
+    premises:
+      "Apartment 1205, Tower B, Marina Crest Residences, Lusail Marina District, Doha (Unit ID MC-B-1205), a two-bedroom apartment of approximately 121 sqm, together with parking bay B-78.",
+    clauses: [
+      ["Term", "The term of this Lease is twenty-four (24) months, commencing on 1 July 2025 (the \"Commencement Date\") and expiring on 30 June 2027 (the \"Expiry Date\")."],
+      ["Rent", "The Tenant shall pay rent of QAR 9,800 per month, payable monthly in advance on the first day of each month. The annual rent is QAR 117,600."],
+      ["Security Deposit", "On signing, the Tenant shall pay a security deposit of QAR 9,800, refundable within thirty (30) days of the end of the Lease."],
+      ["Rent Escalation", "The monthly rent shall increase by four percent (4%) on each anniversary of the Commencement Date."],
+      ["Renewal", "The Tenant may renew this Lease for a further twelve (12) months by giving written notice not less than sixty (60) days before the Expiry Date."],
+      ["Termination", "Either party may terminate this Lease by giving two (2) months' written notice after the first twelve (12) months of the term."],
+      ["Maintenance", "The Landlord is responsible for structural repairs and major equipment, including air-conditioning units and the water heater. The Tenant shall report defects promptly and keep the premises in good condition."],
+    ],
+    signatures: { landlord: "2025-06-20", tenant: "2025-06-20" },
+  },
+];
+
+function renderLease(lease, outDir = OUT_DIR) {
+  const filePath = join(outDir, lease.file);
 
   return new Promise((resolve, reject) => {
     const doc = new PDFDocument({
@@ -482,7 +523,7 @@ const expected = {
   "lease-03-occupied-MC-B-1205.pdf": {
     unitId: "MC-B-1205",
     rules: { R1: "PASS", R2: "PASS", R3: "FAIL", R4: "PASS", R5: "PASS", R6: "PASS", R7: "FAIL" },
-    flags: ["Unit is currently occupied", "Term 48 months exceeds 36 without owner approval"],
+    flags: ["Overlaps the current lease on MC-B-1205 (Thomas Reyes, to 30 June 2027)","Term 48 months exceeds 36 without owner approval"],
   },
   "lease-04-quarterly-no-deposit-MC-A-0301.pdf": {
     unitId: "MC-A-0301",
@@ -501,7 +542,8 @@ const expected = {
   },
   "lease-07-docx-MC-A-0302.docx": {
     unitId: "MC-A-0302",
-    rules: { R1: "PASS", R2: "PASS", R3: "PASS", R4: "PASS", R5: "PASS", R6: "PASS", R7: "FAIL" },
+    // Starts the day after the current lease on MC-A-0302 ends, so it is the unit's next lease
+    rules: { R1: "PASS", R2: "PASS", R3: "PASS", R4: "PASS", R5: "PASS", R6: "PASS", R7: "PASS" },
     flags: ["Rent is annual (monthly derived: 11,000)"],
   },
   "lease-08-image-MC-A-0301.png": {
@@ -512,8 +554,10 @@ const expected = {
 };
 
 async function main() {
+  mkdirSync(CURRENT_DIR, { recursive: true });
   await Promise.all([
-    ...leases.map(renderLease),
+    ...leases.map((lease) => renderLease(lease)),
+    ...currentLeases.map((lease) => renderLease(lease, CURRENT_DIR)),
     renderLease06Long(),
     renderLease07Docx(),
     renderLease08Image(),

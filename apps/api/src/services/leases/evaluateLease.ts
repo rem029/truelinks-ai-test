@@ -3,8 +3,11 @@ import type { Repositories } from '../../db/repositories/index.ts';
 import { matchUnit, type UnitMatch } from './unitMatch.ts';
 import { evaluateRules } from './rules.ts';
 import { detectFlags } from './flags.ts';
+import { todayIso } from './unitLeases.ts';
 
 export interface EvaluateLeaseInput {
+  // Absent for a lease not saved yet; excludes the lease itself from the unit's confirmed leases
+  leaseId?: string;
   record: LeaseRecord;
   pageUnitId?: string | null;
   document?: Pick<LeaseDocument, 'textSource' | 'clauseSplit'>;
@@ -20,7 +23,7 @@ export interface EvaluateLeaseResult {
 
 export async function evaluateLease(
   input: EvaluateLeaseInput,
-  repos: Pick<Repositories, 'rulesets' | 'units'>
+  repos: Pick<Repositories, 'rulesets' | 'units' | 'leases'>
 ): Promise<EvaluateLeaseResult> {
   const startTime = Date.now();
 
@@ -31,10 +34,14 @@ export async function evaluateLease(
 
   const units = await repos.units.list();
   const unitMatch = matchUnit(input.record, units, input.pageUnitId);
+  const unitLeases = unitMatch.status === 'matched' ? await repos.leases.listByUnit(unitMatch.unit.unitId) : [];
+  const confirmedLeases = unitLeases.filter((lease) => lease.status === 'confirmed' && lease.id !== input.leaseId);
   const ruleResults = evaluateRules({
     record: input.record,
     unitMatch,
     ruleset,
+    confirmedLeases,
+    today: todayIso(),
     previousResults: input.previousResults,
   });
   const flags = detectFlags({
@@ -42,6 +49,7 @@ export async function evaluateLease(
     unitMatch,
     pageUnitId: input.pageUnitId,
     document: input.document,
+    confirmedLeases,
   });
 
   const passCount = ruleResults.filter((r) => r.status === 'PASS').length;

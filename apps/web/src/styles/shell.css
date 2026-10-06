@@ -269,6 +269,88 @@
 }
 
 /* Phones: the sidebar becomes a top bar; the menu button shows the units */
+/* Unit page: the lease in effect and the one lined up next */
+.unit-leases {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 0.75rem;
+}
+
+.unit-lease {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 1rem 1.125rem;
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+}
+
+.unit-lease-current {
+  border-left: 3px solid var(--accent);
+}
+
+.unit-lease-eyebrow {
+  margin: 0;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.unit-lease-tenant {
+  margin: 0;
+  font-size: 1.125rem;
+  font-weight: 600;
+}
+
+.unit-lease-facts {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+  font-size: 0.875rem;
+}
+
+.unit-lease-facts div {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.unit-lease-facts dt {
+  flex: 0 0 6.5rem;
+  color: var(--text-secondary);
+}
+
+.unit-lease-facts dd {
+  margin: 0;
+  font-variant-numeric: tabular-nums;
+}
+
+.unit-lease-timing {
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+.unit-lease-link {
+  align-self: flex-start;
+  margin-top: 0.25rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--accent-text);
+}
+
+.unit-lease-missing {
+  margin: 0;
+  padding: 0.75rem 1rem;
+  font-size: 0.875rem;
+  color: var(--warn-text);
+  background-color: var(--warn-bg);
+  border: 1px solid var(--warn-border);
+  border-radius: var(--radius-md);
+}
+
 @media (max-width: 768px) {
   .app-shell {
     flex-direction: column;

@@ -4,6 +4,7 @@ import { startLeaseReview } from '../utils/startLeaseReview.ts';
 import { navigate, toHash, type UnitTab } from '../utils/router.ts';
 import { IssueReportList } from '../components/units/IssueReportList.tsx';
 import { LeaseReviewList } from '../components/units/LeaseReviewList.tsx';
+import { UnitLeasePanel } from '../components/units/UnitLeasePanel.tsx';
 
 export interface UnitPageProps {
   unitId: string;
@@ -23,6 +24,10 @@ export function UnitPage({ unitId, tab, unit, reviews }: UnitPageProps) {
   const issues = unitReviews.filter((r) => r.kind === 'issue');
   const leases = unitReviews.filter((r) => r.kind === 'lease');
   const counts: Record<UnitTab, number> = { issues: issues.length, leases: leases.length };
+  const confirmedKey = leases
+    .filter((r) => r.leaseStatus === 'confirmed')
+    .map((r) => r.id)
+    .join(',');
 
   return (
     <div className="page">
@@ -37,6 +42,8 @@ export function UnitPage({ unitId, tab, unit, reviews }: UnitPageProps) {
         </div>
         {unit && <span className={`badge ${unit.status === 'available' ? 'badge-pass' : 'badge-subtle'}`}>{unit.status}</span>}
       </header>
+
+      {unit && <UnitLeasePanel unit={unit} confirmedKey={confirmedKey} />}
 
       <nav className="tabs" aria-label={`${unitId} records`}>
         {TABS.map((t) => (

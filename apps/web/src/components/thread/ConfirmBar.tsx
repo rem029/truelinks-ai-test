@@ -20,7 +20,7 @@ export function ConfirmBar({ lease, review, onConfirm, disabled }: ConfirmBarPro
       <div className="confirm-bar">
         <div className="confirm-bar-done">
           <span className="confirm-bar-done-label">✓ Lease confirmed</span>
-          {lease.unitId && <span>· Unit {lease.unitId} marked occupied</span>}
+          {lease.unitId && <span>· Unit {lease.unitId}</span>}
           {lease.overrideReason && <span>· Override: &ldquo;{lease.overrideReason}&rdquo;</span>}
         </div>
       </div>

@@ -43,7 +43,7 @@
       "R7": "FAIL"
     },
     "flags": [
-      "Unit is currently occupied",
+      "Overlaps the current lease on MC-B-1205 (Thomas Reyes, to 30 June 2027)",
       "Term 48 months exceeds 36 without owner approval"
     ]
   },
@@ -101,7 +101,7 @@
       "R4": "PASS",
       "R5": "PASS",
       "R6": "PASS",
-      "R7": "FAIL"
+      "R7": "PASS"
     },
     "flags": [
       "Rent is annual (monthly derived: 11,000)"

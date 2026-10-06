@@ -5,12 +5,14 @@ import { migrateToLatest } from './migrations/migrate.ts';
 import { seed } from './db/seed.ts';
 import { createRepositories } from './db/repositories/index.ts';
 import { createModelProvider } from './services/agents/modelProvider/index.ts';
+import { seedCurrentLeases } from './services/leases/seedCurrentLeases.ts';
 
 const db = createDb(env.DATABASE_URL);
 await migrateToLatest(db);
 await seed(db);
 
 const repositories = createRepositories(db);
+await seedCurrentLeases(repositories, env.UPLOAD_DIR);
 const modelProvider = createModelProvider({
   apiKey: env.OPENROUTER_API_KEY,
   model: env.OPENROUTER_MODEL,

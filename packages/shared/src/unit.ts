@@ -30,3 +30,23 @@ export const NewUnit = z.object({
   buildingId: z.string().min(1),
 });
 export type NewUnit = z.infer<typeof NewUnit>;
+
+// A confirmed lease as the unit page shows it; months left are worked out where it is displayed
+export const UnitLeaseSummary = z.object({
+  leaseId: z.string(),
+  conversationId: z.string(),
+  tenant: z.string().nullable(),
+  commencementDate: z.string().nullable(),
+  expiryDate: z.string().nullable(),
+  monthlyRent: z.number().nullable(),
+  deposit: z.number().nullable(),
+  currency: z.string().nullable(),
+});
+export type UnitLeaseSummary = z.infer<typeof UnitLeaseSummary>;
+
+// Confirmed leases never overlap, so a unit has at most one lease in effect and one lined up next
+export const UnitLeases = z.object({
+  active: UnitLeaseSummary.nullable(),
+  next: UnitLeaseSummary.nullable(),
+});
+export type UnitLeases = z.infer<typeof UnitLeases>;

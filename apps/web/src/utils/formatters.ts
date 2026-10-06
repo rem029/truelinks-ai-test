@@ -66,3 +66,26 @@ export function formatShortDate(isoString: string): string {
   }
 }
 
+
+// Lease dates are calendar dates (yyyy-mm-dd), shown without a time zone shift
+export function formatLeaseDate(iso: string): string {
+  const d = new Date(`${iso}T00:00:00Z`);
+  if (isNaN(d.getTime())) return iso;
+  return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' });
+}
+
+// Whole calendar months from one date to another, counting a part month as one
+export function monthsBetweenDates(fromIso: string, toIso: string): number {
+  const from = new Date(`${fromIso}T00:00:00Z`);
+  const to = new Date(`${toIso}T00:00:00Z`);
+  const months =
+    (to.getUTCFullYear() - from.getUTCFullYear()) * 12 +
+    (to.getUTCMonth() - from.getUTCMonth()) +
+    (to.getUTCDate() >= from.getUTCDate() ? 1 : 0);
+  return Math.max(months, 0);
+}
+
+export function formatMoney(amount: number | null, currency: string | null): string {
+  if (amount === null) return '—';
+  return `${currency ?? ''} ${amount.toLocaleString('en-US')}`.trim();
+}

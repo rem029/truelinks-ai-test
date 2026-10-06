@@ -5,6 +5,7 @@ import type { Repositories } from '../../db/repositories/index.ts';
 import { defineTool, type Tool } from '../agents/toolRegistry.ts';
 import { askUserTool } from '../agents/askUserTool.ts';
 import { verifyQuote } from '../leases/extract/verifyQuote.ts';
+import { placeUnitLeases, todayIso } from '../leases/unitLeases.ts';
 
 export interface WorkOrderTurnState {
   issue: Issue;
@@ -28,13 +29,10 @@ export const DraftWorkOrderArgs = z.object({
 });
 export type DraftWorkOrderArgs = z.infer<typeof DraftWorkOrderArgs>;
 
-// The unit's lease only counts once the owner has confirmed it; a draft lease is not yet the agreement
-async function findConfirmedLease(unitId: string, repositories: Repositories) {
-  const leases = await repositories.leases.listByUnit(unitId);
-  const confirmed = leases
-    .filter((lease) => lease.status === 'confirmed')
-    .sort((a, b) => (b.confirmedAt ?? '').localeCompare(a.confirmedAt ?? ''));
-  return confirmed[0] ?? null;
+// The repair is judged against the confirmed lease in effect today: not a draft, and not the next tenant's lease
+async function findActiveLease(unitId: string, repositories: Repositories) {
+  const confirmed = (await repositories.leases.listByUnit(unitId)).filter((lease) => lease.status === 'confirmed');
+  return placeUnitLeases(confirmed, todayIso()).active;
 }
 
 export function buildDraft(args: DraftWorkOrderArgs, state: WorkOrderTurnState, now: string): WorkOrder {
@@ -80,13 +78,13 @@ export function buildDraft(args: DraftWorkOrderArgs, state: WorkOrderTurnState, 
 export function createWorkOrderTools(state: WorkOrderTurnState, ctx: { repositories: Repositories }): Tool[] {
   const getUnitLeaseTool = defineTool({
     name: 'get_unit_lease',
-    description: "Get the unit's confirmed lease: tenant and every clause (id, heading, text). Use it to find who is responsible for the repair.",
+    description: "Get the unit's confirmed lease in effect today: tenant and every clause (id, heading, text). Use it to find who is responsible for the repair.",
     args: z.object({}),
     handler: async () => {
-      const lease = await findConfirmedLease(state.issue.unitId, ctx.repositories);
+      const lease = await findActiveLease(state.issue.unitId, ctx.repositories);
       state.leaseChecked = true;
       if (!lease) {
-        return { lease: null, reason: 'No confirmed lease on file for this unit' };
+        return { lease: null, reason: 'No confirmed lease in effect on this unit' };
       }
       const documents = await ctx.repositories.documents.listByConversation(lease.conversationId);
       const clauses = documents[documents.length - 1]?.clauses ?? [];

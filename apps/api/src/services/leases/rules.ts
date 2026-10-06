@@ -1,13 +1,17 @@
-import type { LeaseRecord, Ruleset, RuleResult, RuleStatus, SourcedField } from '@truelinks/shared';
+import type { Lease, LeaseRecord, Ruleset, RuleResult, RuleStatus, SourcedField } from '@truelinks/shared';
 import { monthsBetween } from './leaseTerm.ts';
 import { monthlyRent, compareAnnualRent } from './rent.ts';
 import { formatMoney, getClauseIds } from './leaseFields.ts';
 import { type UnitMatch, unitNotFoundReason } from './unitMatch.ts';
 import { checkComparison } from './comparisonRule.ts';
+import { describeLease, findOverlap, leaseTerm, placeUnitLeases } from './unitLeases.ts';
 
 interface CheckContext {
   record: LeaseRecord;
   unitMatch: UnitMatch;
+  // Confirmed leases on the matched unit, other than this one
+  confirmedLeases: Lease[];
+  today: string;
 }
 
 interface CheckResult {
@@ -260,21 +264,51 @@ const checkR6: RuleCheck = ({ record }) => {
   };
 };
 
-const checkR7: RuleCheck = ({ record, unitMatch }) => {
+// Only one lease can be in effect on a unit, so availability is decided by dates, not the occupancy flag
+const checkR7: RuleCheck = ({ record, unitMatch, confirmedLeases, today }) => {
   const clauseIds = getClauseIds(record.unit.unitId, record.unit.label, record.unit.parkingBay);
 
   if (unitMatch.status === 'matched') {
-    if (unitMatch.unit.status === 'available') {
+    const unitId = unitMatch.unit.unitId;
+    const term = leaseTerm(record);
+    const dateClauseIds = getClauseIds(record.unit.unitId, record.commencementDate, record.expiryDate);
+
+    if (confirmedLeases.length === 0) {
+      if (unitMatch.unit.status === 'occupied') {
+        return { status: 'FAIL', reason: `Unit ${unitId} is occupied but has no confirmed lease on record`, clauseIds };
+      }
+      return { status: 'PASS', reason: `Unit ${unitId} is available`, clauseIds };
+    }
+
+    if (!term) {
+      return {
+        status: 'NOT_DETERMINABLE',
+        reason: `Unit ${unitId} has a confirmed lease; commencement and expiry dates are needed to check for an overlap`,
+        clauseIds: dateClauseIds,
+      };
+    }
+
+    const overlap = findOverlap(record, confirmedLeases);
+    if (overlap) {
+      return {
+        status: 'FAIL',
+        reason: `Overlaps the confirmed lease on ${unitId} (${describeLease(overlap)})`,
+        clauseIds: dateClauseIds,
+      };
+    }
+
+    const { active } = placeUnitLeases(confirmedLeases, today);
+    if (active && term.start > (active.record.expiryDate.value ?? '')) {
       return {
         status: 'PASS',
-        reason: `Unit ${unitMatch.unit.unitId} is available`,
-        clauseIds,
+        reason: `Next lease: starts ${term.start}, after the current lease ends (${describeLease(active)})`,
+        clauseIds: dateClauseIds,
       };
     }
     return {
-      status: 'FAIL',
-      reason: `Unit ${unitMatch.unit.unitId} is occupied`,
-      clauseIds,
+      status: 'PASS',
+      reason: `No confirmed lease on ${unitId} overlaps ${term.start} to ${term.end}`,
+      clauseIds: dateClauseIds,
     };
   }
 
@@ -308,6 +342,8 @@ export function evaluateRules(input: {
   record: LeaseRecord;
   unitMatch: UnitMatch;
   ruleset: Ruleset;
+  confirmedLeases: Lease[];
+  today: string;
   // Results already on the lease: plain-language rules are judged by the background analysis, not here
   previousResults?: RuleResult[];
 }): RuleResult[] {
@@ -332,6 +368,6 @@ export function evaluateRules(input: {
     if (!check) {
       return { ...base, status: 'NOT_DETERMINABLE', reason: `No check implemented for rule ${rule.id}`, clauseIds: [], checkedBy: 'code' };
     }
-    return { ...base, ...check({ record: input.record, unitMatch: input.unitMatch }), checkedBy: 'code' };
+    return { ...base, ...check(input), checkedBy: 'code' };
   });
 }

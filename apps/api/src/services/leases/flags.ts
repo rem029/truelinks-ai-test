@@ -1,14 +1,17 @@
-import type { Flag, LeaseDocument, LeaseRecord, Severity } from '@truelinks/shared';
+import type { Flag, Lease, LeaseDocument, LeaseRecord, Severity } from '@truelinks/shared';
 import { monthsBetween } from './leaseTerm.ts';
 import { monthlyRent, compareAnnualRent } from './rent.ts';
 import { formatMoney, getClauseIds, listFields } from './leaseFields.ts';
 import { type UnitMatch, unitNotFoundReason } from './unitMatch.ts';
+import { describeLease, findDuplicate } from './unitLeases.ts';
 
 export interface DetectFlagsInput {
   record: LeaseRecord;
   unitMatch: UnitMatch;
   pageUnitId?: string | null;
   document?: Pick<LeaseDocument, 'textSource' | 'clauseSplit'>;
+  // Confirmed leases on the matched unit, other than this one
+  confirmedLeases?: Lease[];
 }
 
 function flag(params: {
@@ -267,6 +270,22 @@ function unitFlags(
   return flags;
 }
 
+function duplicateFlags(record: LeaseRecord, confirmedLeases: Lease[]): Flag[] {
+  const duplicate = findDuplicate(record, confirmedLeases);
+  if (!duplicate) {
+    return [];
+  }
+  return [
+    flag({
+      code: 'DUPLICATE_LEASE',
+      severity: 'high',
+      message: `Looks like a lease already confirmed on unit ${duplicate.unitId} (${describeLease(duplicate)}): same tenant, start date and monthly rent`,
+      fieldPaths: ['tenant.name', 'commencementDate', 'rent.amount'],
+      clauseIds: getClauseIds(record.tenant.name, record.commencementDate, record.rent.amount),
+    }),
+  ];
+}
+
 function unverifiedQuoteFlags(record: LeaseRecord): Flag[] {
   const flags: Flag[] = [];
   for (const { fieldPath, field } of listFields(record)) {
@@ -372,6 +391,7 @@ export function detectFlags(input: DetectFlagsInput): Flag[] {
     ...signatureFlags(input.record),
     ...oddValueFlags(input.record),
     ...unitFlags(input.record, input.unitMatch, input.pageUnitId),
+    ...duplicateFlags(input.record, input.confirmedLeases ?? []),
     ...unverifiedQuoteFlags(input.record),
     ...currencyFlags(input.record),
     ...documentFlags(input.document),

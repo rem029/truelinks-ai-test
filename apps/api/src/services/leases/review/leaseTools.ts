@@ -7,6 +7,7 @@ import { FIELD_PATHS, getField } from '../leaseFields.ts';
 import { editField, isLocked, parseFieldValue } from './patchRecord.ts';
 import { reevaluateLease } from './reevaluateLease.ts';
 import { isKnownUnit } from './knownUnit.ts';
+import { getUnitLeases } from '../../units/getUnitLeases.ts';
 
 export interface LeaseTurnState {
   lease: Lease;
@@ -127,6 +128,15 @@ export function createLeaseTools(state: LeaseTurnState, ctx: LeaseToolsContext):
     },
   });
 
+  const getUnitLeasesTool = defineTool({
+    name: 'get_unit_leases',
+    description: "Get a unit's confirmed leases: the one in effect today and the next one, with tenant, dates and rent",
+    args: z.object({
+      unitId: z.string().describe('Unit ID, e.g. MC-B-1205'),
+    }),
+    handler: async (args) => getUnitLeases(args.unitId, ctx.repositories),
+  });
+
   const evaluateRulesTool = defineTool({
     name: 'evaluate_rules',
     description: 'Re-evaluate acceptance rules and flags against the current lease record',
@@ -144,5 +154,5 @@ export function createLeaseTools(state: LeaseTurnState, ctx: LeaseToolsContext):
     },
   });
 
-  return [searchClausesTool, updateFieldTool, findUnitTool, evaluateRulesTool, askUserTool];
+  return [searchClausesTool, updateFieldTool, findUnitTool, getUnitLeasesTool, evaluateRulesTool, askUserTool];
 }

@@ -15,6 +15,7 @@ export async function reevaluateLease(
 
   const evaluation = await evaluateLease(
     {
+      leaseId: lease.id,
       record: lease.record,
       pageUnitId: conversation?.unitId,
       document: latestDoc,
