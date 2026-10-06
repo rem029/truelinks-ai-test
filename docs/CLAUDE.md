@@ -6,7 +6,7 @@ Brief: `docs/attachments/Solution-brief-explained.docx` (summary in `docs/email.
 ## Commands
 - `npm install` — install all workspaces
 - `npm run dev` — API (8083) + web (3000)
-- `npm test` — end-to-end tests (Playwright, `e2e/`; own ports 3010/8093, throwaway DB in `var/e2e/`, stub model). First run: `npx playwright install chromium`
+- `npm test` — end-to-end tests (Playwright, `e2e/`; own ports 3010/8093, in-memory DB, stub model, video per test). First run: `npx playwright install chromium`. Report: `npx playwright show-report`
 - `npm run typecheck` — `tsc --noEmit` across workspaces
 - `npm run samples:leases` — regenerate sample lease PDFs
 - `npm run db:seed` — migrations + idempotent seed against `DATABASE_URL` (the API also does this on start)

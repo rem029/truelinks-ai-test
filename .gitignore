@@ -16,3 +16,6 @@ var/
 # Playwright output
 test-results/
 playwright-report/
+
+# Editor settings
+.vscode/

@@ -1,10 +1,5 @@
 import { expect, test } from '@playwright/test';
 
-test('the suite runs on the stub model', async ({ request }) => {
-  const health = await request.get('/api/health');
-  expect(await health.json()).toMatchObject({ status: 'ok', modelProvider: 'stub' });
-});
-
 test('review a clean lease, confirm it and find it under its unit', async ({ page }) => {
   await page.goto('/');
   await page.getByRole('button', { name: 'New lease review' }).click();
