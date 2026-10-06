@@ -14,7 +14,7 @@ Requires Node 24+.
 cp .env.example .env      # optional: add OPENROUTER_API_KEY; without it a stub model is used
 npm install
 npm run dev               # API on :8083, web on :3000 → open http://localhost:3000
-npm test                  # unit tests
+npm test                  # end-to-end tests (Playwright; first run: npx playwright install chromium)
 npm run typecheck
 npm run db:seed           # optional: migrations + seed without starting the API
 ```
@@ -54,9 +54,10 @@ apps/web/src
 packages/shared Shared types and Zod schemas (API, agent output, UI)
 data/           Owner ruleset, units, sample leases and photos
 scripts/        Dev utilities (sample data generation)
+e2e/            Playwright end-to-end tests (lease review, issue report)
 ```
 
-Folders are created when their first file is needed. Routes stay thin: no business logic in a route, and no HTTP objects (`req`/`res`) inside a service, so services can be unit-tested directly. Tests sit next to the file they test (`rules.ts` → `rules.test.ts`).
+Folders are created when their first file is needed. Routes stay thin: no business logic in a route, and no HTTP objects (`req`/`res`) inside a service, so services stay easy to test and reuse. End-to-end tests live in `e2e/`.
 
 ## Sample data
 
@@ -105,7 +106,7 @@ Folders are created when their first file is needed. Routes stay thin: no busine
 
 - **Review happens in a chat, and the result is saved to the unit.** The user uploads a lease or photos into a conversation. The agent replies with interactive cards (fields with their source quote, flags, rule results, a draft work order). The user accepts, rejects or edits a card, or types a correction in plain language. The agent updates only the affected fields, runs the rules again, says what changed and asks about whatever is still open. This repeats until the user confirms. The confirmed result is saved to the unit, and the unit page links back to the conversation.
 - **A correction changes only the fields it mentions; the agent never re-reads the whole lease.** Accepted fields are locked. Re-reading the lease on every turn could quietly change values the user already approved, because model output varies from run to run. A typed correction is recorded with the user's message as its source, so the record stays traceable.
-- **The model extracts and code decides.** Rules R1–R7, date calculations, unit matching and quote checks are plain TypeScript with unit tests. Rules are loaded from `data/owner_ruleset.json`, and every lease review records the ruleset version it was checked against.
+- **The model extracts and code decides.** Rules R1–R7, date calculations, unit matching and quote checks are plain TypeScript functions with no I/O. Rules are loaded from `data/owner_ruleset.json`, and every lease review records the ruleset version it was checked against.
 - **Tool calling where the agent has to decide; fixed steps elsewhere.** The first extraction is a single structured-output call. In the review loop and the issue flow, the agent chooses among tools: `search_clauses`, `update_field`, `find_unit`, `evaluate_rules`, `get_unit_lease`, `draft_work_order`, `ask_user`. There is no tool for confirming, saving or changing occupancy; only the user's button does that. Tool arguments are schema-checked, each turn is capped at about 6 steps, and every call is logged.
 - **One work order per report, responsibility is advice.** A report with two faults (issue-02: a dripping tap and a corroded drain) becomes one work order with a line per fault, not two. Responsibility is `split` when faults fall to different parties or depend on a cost the photos can't show ("minor repairs under QAR 500"), and the reason says which fault goes where. The agent must quote the lease clause, and code checks the quote. If the owner changes the party, the quote is dropped, because it no longer supports the choice. Code, not the model, decides whether to draft at all: no damage means no work order, so the agent can't invent one.
 - **No second "judge" AI.** Code checks and human review already cover verification more reliably, at no extra cost or delay. The useful cross-checking (for example, who pays for a repair) happens through `get_unit_lease`.
@@ -137,7 +138,7 @@ Folders are created when their first file is needed. Routes stay thin: no busine
   - The app's logic talks to *repository interfaces* (`UnitRepository`, `LeaseRepository`, …), never to a database driver.
   - The repositories use [Kysely](https://kysely.dev), a typed SQL query builder that supports SQLite, Postgres and MySQL. Switching databases means changing the dialect in one file and setting `DATABASE_URL`, not rewriting queries.
   - Migrations stick to portable SQL types. Structured records (a lease's extracted fields, chat cards) go in JSON columns: `TEXT` in SQLite, `jsonb` in Postgres. Every JSON column is parsed with the shared Zod schema when it's read, so a bad row fails loudly instead of reaching the UI.
-  - Migrations are TypeScript objects registered in one list (no file scanning), so they run the same under `tsx`, Vitest and a build.
+  - Migrations are TypeScript objects registered in one list (no file scanning), so they run the same under `tsx` and a build.
   - **Why Kysely over Drizzle or Prisma.** All three are typed and support these databases. Kysely is only a query builder: queries read like SQL, with no models, relation layer or code generator, which matches "plain functions and data" when the repositories already hide data access from the services. Prisma adds its own schema language and a generated client; Drizzle is the closest alternative. The trade-off: Drizzle generates migrations from one TypeScript schema, while here `db/schema.ts` (the table types) is kept in step with the migrations by hand, so a new column means touching both. At this size that's a small cost. Since services only see the repository interfaces, switching later would mean rewriting the repositories and migrations, not the app.
   - A `postgres://` URL currently stops with a clear "not wired yet" error rather than adding a Postgres driver nobody uses yet.
   - **Trade-off:** SQLite allows only one writer at a time, so it's the first thing to replace when there are many users. That's the first item under "Where it breaks first at scale".
@@ -145,6 +146,7 @@ Folders are created when their first file is needed. Routes stay thin: no busine
 - **The browser talks to the API through the Vite dev proxy.** The web app calls `/api/...` on its own origin and Vite forwards it to the API. That means no CORS setup and no API URL to configure, and it behaves the same on localhost and behind a remote proxy. In production the same path would be routed by the reverse proxy.
 - **Imports name the real file.** Relative imports use `.ts` (`./rules.ts`), not the `.js` that Node's ESM convention asks for when TypeScript compiles to JavaScript. Nothing here is compiled: `tsx` runs the API, Vite builds the web app and `tsc` only typechecks, so `.ts` points at the file that actually exists and also works with Node's built-in TypeScript support.
 - **Standard library over small packages.** `.env` is loaded with Node's built-in `process.loadEnvFile` (no `dotenv`) and validated with Zod at startup, so a bad value fails loudly. The shared package is consumed as TypeScript source (no build step) by `tsx` in the API and Vite in the web app.
+- **End-to-end tests instead of unit tests.** `npm test` runs Playwright against the real app: it starts its own API and web server on ports 8093 and 3010 with a throwaway database (`var/e2e/`) and the stub model, so it runs next to `npm run dev` without touching `var/app.db`. Two flows are covered: upload a lease, Accept all, confirm and find it under its unit; and report an issue with photos, accept the drafted work order and find it under its unit. They check what a reviewer would click through, including that every control is reachable by its accessible name (a hidden radio button failed this and was fixed). The trade-off: the rules, date math and quote checks are no longer tested one function at a time, so a regression there shows up only if it breaks a flow.
 - **Dependency install scripts are off (`.npmrc`: `ignore-scripts=true`).** `better-sqlite3` ships prebuilt binaries and marks itself `gypfile: false`, but npm loses that flag when it installs from the lockfile and tries `node-gyp rebuild`, which fails without Python. Nothing else here needs an install script (esbuild gets its binary through optional dependencies), so turning scripts off makes a fresh clone install everywhere and stops dependencies from running code at install time. Our own `npm run` scripts are unaffected.
 - **Zustand for global UI state, only where it's needed.** We have used it before; it's small, hook-based and needs no provider or boilerplate. Local component state stays in `useState`, and server data comes from the API client. A store is added only for state shared across screens (e.g. the open conversation).
 - **Two cheap models: a fast one for simple jobs, a reasoning one for judgement.** `OPENROUTER_FAST_MODEL` (`google/gemini-3.5-flash-lite`) handles lease extraction, heading detection and image transcription. `OPENROUTER_MODEL` (`xiaomi/mimo-v2.6-pro`) handles the background analysis, the review chat's tool calls and photo assessment. Chat turns (lease corrections, work order drafts) run with low reasoning effort: they patch a few fields, and with full reasoning a reply took 30–100 s. Each model call states which tier it needs (`modelTier`).
@@ -175,7 +177,7 @@ Folders are created when their first file is needed. Routes stay thin: no busine
 Built with AI coding tools, as the brief invites. Planning lives in `docs/tasks/` (one file per task, split into phases with Tasks and Results), and the working rules are in `CLAUDE.md`. Every phase follows the same loop:
 1. **Plan:** Claude Code writes a precise brief for the phase.
 2. **Implement:** a second coding agent (via agy-bridge) writes the code.
-3. **Seed and test:** load the sample data and run typecheck, unit tests and an end-to-end check on the stub model.
+3. **Seed and test:** load the sample data and run typecheck and the end-to-end tests on the stub model.
 4. **Review:** Claude Code reviews the full diff against the standards, and the two loop until it's clean.
 
 Splitting writing from reviewing means no agent signs off its own work. The one exception so far: when the second agent ran out of quota partway through task 04 phase 2, Claude Code wrote the rest, and the task's Results say which parts.

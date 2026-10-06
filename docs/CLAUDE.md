@@ -6,7 +6,7 @@ Brief: `docs/attachments/Solution-brief-explained.docx` (summary in `docs/email.
 ## Commands
 - `npm install` — install all workspaces
 - `npm run dev` — API (8083) + web (3000)
-- `npm test` — unit tests (Vitest)
+- `npm test` — end-to-end tests (Playwright, `e2e/`; own ports 3010/8093, throwaway DB in `var/e2e/`, stub model). First run: `npx playwright install chromium`
 - `npm run typecheck` — `tsc --noEmit` across workspaces
 - `npm run samples:leases` — regenerate sample lease PDFs
 - `npm run db:seed` — migrations + idempotent seed against `DATABASE_URL` (the API also does this on start)
@@ -23,7 +23,7 @@ Brief: `docs/attachments/Solution-brief-explained.docx` (summary in `docs/email.
 - `apps/api/src`: `routes/` (endpoints: validate input with Zod, call a service, respond; no business logic), `services/` (business logic; no `req`/`res`) with `services/agents/` (lease + issue agents, prompt files, model provider), `db/` (Kysely setup, schema types, seed, repositories: data access only, no business logic), `migrations/` (database migrations, numbered `NNN_name.ts`; never edit one that has been committed, add a new one), `middleware/` (Express middleware), `utils/` (small pure helpers). `env.ts`, `app.ts`, `server.ts` at the root.
 - `apps/web/src`: `pages/` (one component per screen), `components/` (reusable), `hooks/` (when needed), `store/` (Zustand, only for state shared across screens), `utils/` (helpers; `utils/api.ts` is the only place that calls `fetch`), `styles/` (plain CSS by area: tokens, base, shell, thread, cards, issue; no inline styles).
 - Create a folder when its first file arrives; no empty placeholder folders.
-- Tests sit next to the file they test (`rules.ts` → `rules.test.ts`).
+- End-to-end tests live in `e2e/`, one spec per user flow. No unit test files.
 
 ## Code standards
 **Simple, easy to debug, easy to maintain.** This code is read as the standard for a team — optimise for the next reader.
@@ -31,7 +31,7 @@ Brief: `docs/attachments/Solution-brief-explained.docx` (summary in `docs/email.
 - Small files with one job. Name things for what they mean in the domain (`lease`, `unit`, `workOrder`, `ruleResult`).
 - Relative imports use the real `.ts` extension (`import { evaluateRules } from './rules.ts'`); `allowImportingTsExtensions` is on and nothing is compiled to `.js`.
 - TypeScript `strict`. No `any`; validate external input (HTTP bodies, model output, files) with Zod at the boundary, then trust the types inside.
-- Pure logic (rules, date math, unit matching, quote checks) has no I/O, so it's trivially unit-testable.
+- Pure logic (rules, date math, unit matching, quote checks) has no I/O, so it's easy to reason about and reuse.
 - Errors: fail loudly with a clear message; never swallow. One Express error handler returns `{ error, details }`. Don't catch just to rethrow.
 - Logging: one line per request and per model/tool call (what, inputs summary, duration, result). No secrets or full documents in logs.
 - Comments explain *why*, not *what*. No commented-out code.
@@ -39,11 +39,11 @@ Brief: `docs/attachments/Solution-brief-explained.docx` (summary in `docs/email.
 
 ## Dependencies
 Before adding a package, check it is **actively maintained** (release in the last ~6 months, issues answered), **widely used** (strong weekly downloads, many dependents) and **has types**. Prefer the standard library or a few lines of code over a package for small things. Record why each non-obvious dependency was chosen in README → Decisions.
-Approved so far: express, zod, multer, kysely, better-sqlite3, openai, unpdf, mammoth, react, react-dom, zustand, vite, @vitejs/plugin-react, vitest; dev tooling: typescript, tsx, concurrently, @types/*, pdfkit, docx and @napi-rs/canvas (sample lease generation only).
+Approved so far: express, zod, multer, kysely, better-sqlite3, openai, unpdf, mammoth, react, react-dom, zustand, vite, @vitejs/plugin-react; testing: @playwright/test; dev tooling: typescript, tsx, concurrently, @types/*, pdfkit, docx and @napi-rs/canvas (sample lease generation only).
 
 ## Testing
-- Unit-test all deterministic logic: rule engine R1–R7, term/date math, rent normalisation, unit matching, quote verification, patch/lock logic.
-- Use `data/sample-leases/expected.json` and `data/sample-photos/expected.json` as fixtures.
+- Playwright end-to-end tests in `e2e/` cover each user flow through the UI, on the stub provider with the sample files in `data/`.
+- Find elements by role and accessible name (`getByRole`), not CSS selectors, so the tests also catch controls a keyboard or screen reader can't reach.
 - The whole app must run end-to-end with the stub provider (no API key).
 - Run `npm run typecheck` and `npm test` before every commit.
 
@@ -71,7 +71,7 @@ Approved so far: express, zod, multer, kysely, better-sqlite3, openai, unpdf, ma
 1. **Plan:** Claude reads the task file and writes a precise brief for the phase: goal, files to touch, interfaces/schemas, acceptance criteria, which standards in this file apply.
 2. **Implement with agy-bridge:** Claude delegates the implementation via `mcp__agy-bridge__delegate` (use `follow_up` to iterate on the same job). Claude does not hand-write the feature code; small fixes after review may go back through `follow_up`.
 3. **Seed:** make sure the data the phase needs exists and is loaded — run migrations + idempotent seed (`data/units.json`, `data/owner_ruleset.json`, sample leases/photos, `expected.json` fixtures). Add seed data in the same phase if missing.
-4. **Test:** run `npm run typecheck` and `npm test`; exercise the phase end-to-end against the seeded data with the stub provider (curl the API or drive the UI). Every phase ships with tests for its logic.
+4. **Test:** run `npm run typecheck` and `npm test`; exercise the phase end-to-end against the seeded data with the stub provider (curl the API or drive the UI). A phase that adds or changes a user flow updates or adds its spec in `e2e/`.
 5. **Review (Claude):** read the full diff against this file's standards and the task's acceptance criteria — correctness, simplicity, naming, error handling, logging, security, dependency rules. Use `mcp__agy-bridge__adversarial_review` as a second opinion on risky changes. Send findings back via `follow_up`; repeat 2–5 until clean.
 6. **Record:** tick the task's checklist, fill in **Results**, update README in the same change.
 

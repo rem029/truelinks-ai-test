@@ -12,3 +12,7 @@ var/
 
 # scratch clones for fresh-install checks
 .temp/
+
+# Playwright output
+test-results/
+playwright-report/

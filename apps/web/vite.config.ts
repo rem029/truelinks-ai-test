@@ -7,6 +7,7 @@ export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, repoRoot, '');
 
   const apiPort = env.API_PORT || '8083';
+  const webPort = Number(env.WEB_PORT || 3000);
   const allowedHostsRaw = env.WEB_ALLOWED_HOSTS?.trim();
   const allowedHosts = allowedHostsRaw
     ? allowedHostsRaw.split(',').map((h) => h.trim()).filter(Boolean)
@@ -17,7 +18,7 @@ export default defineConfig(({ mode }) => {
     plugins: [react()],
     envDir: repoRoot,
     server: {
-      port: 3000,
+      port: webPort,
       strictPort: true,
       host: true,
       allowedHosts: allowedHosts && allowedHosts.length > 0 ? allowedHosts : undefined,
