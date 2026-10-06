@@ -9,3 +9,6 @@ var/
 !/docs/tasks/
 !/docs/CLAUDE.md
 /.claude
+
+# scratch clones for fresh-install checks
+.temp/
