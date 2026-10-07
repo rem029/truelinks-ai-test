@@ -182,15 +182,30 @@ Folders are created when their first file is needed. Routes stay thin: no busine
 
     All but the last two are worked out from the record, so they update when a field is corrected. Conflicts and concerns come only from the background analysis, so they are stored with the lease and kept when the rest are worked out again. One drops away when the owner has accepted or edited every field it names, for example once the owner sets the monthly rent. Policy breaches, such as a term over 36 months or an occupied unit, appear as rule results and are not repeated as flags. The checks are tested against all five sample leases and `data/sample-leases/expected.json`.
 
-## How this was built
+## How this was built, and how a team carries it on
 
-Built with AI coding tools, as the brief invites. Planning lives in `docs/tasks/` (one file per task, split into phases with Tasks and Results), and the working rules are in `CLAUDE.md`. Every phase follows the same loop:
-1. **Plan:** Claude Code writes a precise brief for the phase.
-2. **Implement:** a second coding agent (via agy-bridge) writes the code.
-3. **Seed and test:** load the sample data and run typecheck and the end-to-end tests on the stub model.
-4. **Review:** Claude Code reviews the full diff against the standards, and the two loop until it's clean.
+Built with AI coding tools, as the brief invites. The repo is set up so several people, each with their own coding agent, work from the same instructions and produce code that reads the same.
 
-Splitting writing from reviewing means no agent signs off its own work. The one exception so far: when the second agent ran out of quota partway through task 04 phase 2, Claude Code wrote the rest, and the task's Results say which parts.
+**Same instructions for everyone.**
+- `CLAUDE.md` (root, a link to `docs/CLAUDE.md`) holds the stack, folder layout, code standards, dependency and testing rules, the AI rules ("model extracts, code decides, human confirms") and the workflow below. `apps/web/CLAUDE.md` adds the UI direction. Both are committed, so every developer's agent loads the same rules.
+- The app's own agent prompts are files next to the agents (`apps/api/src/services/agents/prompts/*.md`), versioned and reviewed like code.
+
+**Boundaries that let people work in parallel.**
+- The Zod schemas in `packages/shared` are the one contract between the API, the agents and the UI.
+- In the API, routes only validate and respond, services hold the logic, and repositories only touch the database. The database and the model provider sit behind interfaces.
+- Planning lives in `docs/tasks/`: one file per task, split into phases, each with Tasks and Results (`_template.md`). A phase is the unit one person picks up.
+
+**The loop for each phase.**
+1. **Plan:** a precise brief: goal, the files to touch, interfaces, acceptance criteria.
+2. **Skeleton:** new files as placeholders (signatures plus pseudocode; the bodies throw "Not implemented") and `PLAN:` comments where existing files will change. A person reviews it before any real code is written.
+3. **Implement:** a second coding agent (via agy-bridge) writes the code from the approved skeleton.
+4. **Seed and test:** load the sample data, then run typecheck and the end-to-end tests on the stub model (no API key needed).
+5. **Review:** Claude Code reviews the full diff against `CLAUDE.md` and the skeleton, and the two loop until it's clean.
+6. **Record:** tick the task, fill in Results, and update this README in the same change.
+
+A phase changes at most 15 files, counting tests and docs, so each one is a pull request a reviewer can read in one sitting.
+
+**How it was actually applied.** The skeleton step and the 15-file limit were added on 7 October 2026, after most tasks were done. Until then, phases went from plan straight to implementation and were sometimes larger. The remaining phases (`docs/tasks/00-plan.md` → Remaining work) follow the full loop. Splitting writing from reviewing means no agent signs off its own work. The one exception: when the second agent ran out of quota partway through task 04 phase 2, Claude Code wrote the rest, and the task's Results say which parts. Issues from the last manual test that we chose not to fix are in `docs/tasks/12-known-issues.md`.
 
 ## Where it breaks first at scale
 

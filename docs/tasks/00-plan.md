@@ -14,6 +14,8 @@ Every phase changes at most 15 files and starts with a reviewed skeleton (CLAUDE
 5. **07 phase 2** — submission (2; owner pushes and emails)
 6. Stretch, if time: 08 phase 3, 08 phases 2a–2b, 09 phases 1a–3b, 11 phases 5a–5b
 
+Known issues from the manual test (not planned): `12-known-issues.md`.
+
 ## Must — brief requirements (deliver in 4 days)
 **Part A — Lease record** (owner)
 - Upload lease (PDF; DOCX if quick) → clauses → AI extracts parties, unit, dates, rent (amount + frequency), deposit, escalation, renewal, termination — each with clause + quote
