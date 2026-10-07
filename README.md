@@ -23,7 +23,7 @@ This is the first slice of what would become a **property management system**. T
 - I also made sure the database can easily be switched to PostgreSQL if needed. To be honest, this is my first time using Kysely and Zod; we usually use Knex or Ts.ED with TypeORM.
 
 **Frontend structure**
-- Organized folders: components (headers, cards, layouts, buttons, etc.), hooks (state managed through hooks, like useFilter, etc.), pages that reuse and combine components from the components folder, utils for helper functions, and styles for the CSS.
+- Organized folders: components (headers, cards, layouts, buttons, etc.), hooks (state managed through hooks, like useWorkspace for the units and threads, and useStartLeaseReview), pages that reuse and combine components from the components folder, utils for helper functions, and styles for the CSS.
 
 **Improvements I suggest, which I wasn't able to handle in the four-day timeline**
 - Login for the owner, the reporter and the tenant.
@@ -31,8 +31,8 @@ This is the first slice of what would become a **property management system**. T
 - Each unit has its own QR code; scanning it goes to the reporting page with the unit preselected.
 - When a tenant submits photos, upload the files to the server, then trigger the analysis after a successful submit, because photo analysis sometimes takes time. Then notify the tenant that the submission succeeded, or of any updates. This might remove the need for tenants to log in.
 - A lease format creator, so we can easily map the fields of new leases.
-- Lease ruleset management. Tenant can add, edit or delete existing rules.
-- Property unit management. Maybe they have new units available for rent, so they can add or delete units, or maybe the owner manages multiple properties.
+- Lease ruleset management. The owner can add, edit or delete existing rules. **Already added:** Settings → Rules adds, edits, deletes and restores rules, and each change saves a new ruleset version.
+- Property unit management. Maybe they have new units available for rent, so they can add or delete units, or maybe the owner manages multiple properties. **Already added:** Settings → Units adds a unit to an existing building. Editing or deleting units and multiple properties are not built yet.
 - A better UI/UX for our app. Since property owners will be accessing it, they should spend less time in our app: fewer clicks to reach what they want to do, and clear indicators.
 - A central report for the owner: total issues, issues solved, urgent issues, units' total monthly earnings, issue costs, etc.
 
