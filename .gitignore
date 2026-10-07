@@ -4,10 +4,11 @@ dist/
 *.db
 var/
 
-# docs/: only the task log and CLAUDE.md are public; the brief, email and attachments stay private
+# docs/: only the task log, CLAUDE.md and design.md are public; the brief, email and attachments stay private
 /docs/*
 !/docs/tasks/
 !/docs/CLAUDE.md
+!/docs/design.md
 /.claude
 
 # scratch clones for fresh-install checks

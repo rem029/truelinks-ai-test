@@ -61,7 +61,7 @@ Approved so far: express, zod, multer, kysely, better-sqlite3, openai, unpdf, ma
 
 ## Repo & files
 - Remote: `git@github.com:rem029/truelinks-ai-test.git` (branch `main`).
-- `docs/`: only `docs/tasks/` and `docs/CLAUDE.md` are committed. The brief, email and attachments are private — never commit them.
+- `docs/`: only `docs/tasks/`, `docs/CLAUDE.md` and `docs/design.md` (the full detail behind README) are committed. The brief, email and attachments are private — never commit them.
 - `CLAUDE.md` (root) → symlink to `docs/CLAUDE.md`. Edit the file in `docs/`.
 - `.claude/` (root) → symlink to `docs/.claude/` (gitignored). Plugins are installed at user scope (Claude Code won't write settings through a symlinked `.claude`).
 - Runtime files live outside `docs/` (e.g. `data/`). Secrets only in `.env` (gitignored); document every variable in `.env.example`.
@@ -81,5 +81,5 @@ Approved so far: express, zod, multer, kysely, better-sqlite3, openai, unpdf, ma
 7. **Record:** tick the task's checklist, fill in **Results**, update README in the same change.
 
 - Tasks in `docs/tasks/NN-name.md`, split into phases; each phase has **Tasks** (checklist) and **Results** (what was done, decisions, follow-ups). Template: `docs/tasks/_template.md`. Update Results when a phase finishes.
-- **`README.md` is the deliverable — keep it current in the same change.** Every feature, sample data, script, decision, trade-off, scale concern or product idea goes into README as we go, not at the end.
+- **`README.md` is the deliverable — keep it current in the same change.** Keep it short; the full reasoning goes in `docs/design.md`. Every feature, sample data, script, decision, trade-off, scale concern or product idea goes into README as we go, not at the end.
 - Small, focused commits with a clear message saying what and why. Commit only when asked.
