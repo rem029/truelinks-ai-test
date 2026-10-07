@@ -1,13 +1,12 @@
 import { useState } from 'react';
 import type { ConversationSummary, Unit } from '@truelinks/shared';
-import { startLeaseReview } from '../../utils/startLeaseReview.ts';
-import { navigate, toHash, type Route } from '../../utils/router.ts';
+import { Link, NavLink, useMatch, useNavigate } from 'react-router';
+import { useStartLeaseReview } from '../../hooks/useStartLeaseReview.ts';
 import { ThemeToggle } from '../ThemeToggle.tsx';
 import { SettingsDialog } from '../settings/SettingsDialog.tsx';
 import { GearIcon } from '../icons.tsx';
 
 export interface SidebarProps {
-  route: Route;
   // The unit the current screen belongs to, so "Report an issue" can pick it for you
   currentUnitId: string | null;
   units: Unit[];
@@ -15,7 +14,11 @@ export interface SidebarProps {
   onUnitsChanged: () => void;
 }
 
-export function Sidebar({ route, currentUnitId, units, reviews, onUnitsChanged }: SidebarProps) {
+export function Sidebar({ currentUnitId, units, reviews, onUnitsChanged }: SidebarProps) {
+  const navigate = useNavigate();
+  const startLeaseReview = useStartLeaseReview();
+  // On the report form the unit is only preselected, so the unit's link isn't highlighted
+  const onReportPage = useMatch('/report/*') !== null;
   const [menuOpen, setMenuOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [starting, setStarting] = useState(false);
@@ -36,19 +39,12 @@ export function Sidebar({ route, currentUnitId, units, reviews, onUnitsChanged }
     }
   }
 
-  function isActive(target: Route): boolean {
-    if (target.name === 'unit') {
-      return currentUnitId === target.unitId && route.name !== 'report';
-    }
-    return route.name === target.name;
-  }
-
   return (
     <aside className={`sidebar ${menuOpen ? 'is-open' : ''}`}>
       <div className="sidebar-top">
-        <a className="sidebar-brand" href={toHash({ name: 'home' })} onClick={() => setMenuOpen(false)}>
+        <Link className="sidebar-brand" to="/" onClick={() => setMenuOpen(false)}>
           Lease &amp; Issue Agents
-        </a>
+        </Link>
         <button
           type="button"
           className="btn btn-subtle btn-sm sidebar-menu-button"
@@ -74,7 +70,7 @@ export function Sidebar({ route, currentUnitId, units, reviews, onUnitsChanged }
             className="btn btn-secondary"
             onClick={() => {
               setMenuOpen(false);
-              navigate({ name: 'report', unitId: currentUnitId });
+              navigate(currentUnitId ? `/report/${currentUnitId}` : '/report');
             }}
           >
             Report an issue
@@ -91,31 +87,32 @@ export function Sidebar({ route, currentUnitId, units, reviews, onUnitsChanged }
         <h2 className="sidebar-heading">Units</h2>
         <ul className="sidebar-list">
           {units.map((unit) => {
-            const target: Route = { name: 'unit', unitId: unit.unitId, tab: 'issues' };
+            // Also highlighted on the unit's threads, which live under /c/
+            const active = currentUnitId === unit.unitId && !onReportPage;
             return (
               <li key={unit.unitId}>
-                <a
-                  className={`sidebar-link ${isActive(target) ? 'is-active' : ''}`}
-                  href={toHash(target)}
-                  aria-current={isActive(target) ? 'page' : undefined}
+                <Link
+                  className={`sidebar-link ${active ? 'is-active' : ''}`}
+                  to={`/u/${unit.unitId}/issues`}
+                  aria-current={active ? 'page' : undefined}
                   onClick={() => setMenuOpen(false)}
                 >
                   <span className="sidebar-unit-id">{unit.unitId}</span>
                   <span className={`sidebar-unit-status status-${unit.status}`}>{unit.status}</span>
-                </a>
+                </Link>
               </li>
             );
           })}
           {unassignedCount > 0 && (
             <li>
-              <a
-                className={`sidebar-link ${isActive({ name: 'unassigned' }) ? 'is-active' : ''}`}
-                href={toHash({ name: 'unassigned' })}
+              <NavLink
+                className={({ isActive }) => `sidebar-link ${isActive ? 'is-active' : ''}`}
+                to="/unassigned"
                 onClick={() => setMenuOpen(false)}
               >
                 <span>Unassigned leases</span>
                 <span className="sidebar-count">{unassignedCount}</span>
-              </a>
+              </NavLink>
             </li>
           )}
         </ul>

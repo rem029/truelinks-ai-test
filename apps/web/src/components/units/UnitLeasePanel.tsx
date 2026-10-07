@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import type { Unit, UnitLeases, UnitLeaseSummary } from '@truelinks/shared';
 import { getUnitLeases } from '../../utils/api.ts';
-import { toHash } from '../../utils/router.ts';
+import { Link } from 'react-router';
 import { formatLeaseDate, formatMoney, monthsBetweenDates } from '../../utils/formatters.ts';
 
 export interface UnitLeasePanelProps {
@@ -59,9 +59,9 @@ function LeaseCard({ lease, kind }: { lease: UnitLeaseSummary; kind: 'current' |
           <dd>{formatMoney(lease.deposit, lease.currency)}</dd>
         </div>
       </dl>
-      <a className="unit-lease-link" href={toHash({ name: 'thread', conversationId: lease.conversationId })}>
+      <Link className="unit-lease-link" to={`/c/${lease.conversationId}`}>
         Open lease record
-      </a>
+      </Link>
     </section>
   );
 }

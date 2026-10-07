@@ -1,5 +1,5 @@
 import type { ConversationSummary } from '@truelinks/shared';
-import { toHash } from '../../utils/router.ts';
+import { Link } from 'react-router';
 import { formatShortDate } from '../../utils/formatters.ts';
 import { ArchiveActions } from '../ArchiveActions.tsx';
 
@@ -20,7 +20,7 @@ export function LeaseReviewList({ reviews, onChanged }: LeaseReviewListProps) {
     <ul className="review-list">
       {reviews.map((review) => (
         <li key={review.id} className="review-item">
-          <a className="review-row" href={toHash({ name: 'thread', conversationId: review.id })}>
+          <Link className="review-row" to={`/c/${review.id}`}>
             <span className="review-row-main">
               <span className="review-row-title review-row-file">{review.filename ?? 'Lease review'}</span>
               <span className="review-row-meta">{formatShortDate(review.createdAt)}</span>
@@ -30,7 +30,7 @@ export function LeaseReviewList({ reviews, onChanged }: LeaseReviewListProps) {
                 {describeStatus(review)}
               </span>
             </span>
-          </a>
+          </Link>
           <ArchiveActions
             conversationId={review.id}
             kind="lease"

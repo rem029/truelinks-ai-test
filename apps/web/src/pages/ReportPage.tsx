@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import type { Unit } from '@truelinks/shared';
 import { createConversation } from '../utils/api.ts';
-import { navigate } from '../utils/router.ts';
+import { useNavigate } from 'react-router';
 
 export interface ReportPageProps {
   units: Unit[];
@@ -9,6 +9,7 @@ export interface ReportPageProps {
 }
 
 export function ReportPage({ units, initialUnitId }: ReportPageProps) {
+  const navigate = useNavigate();
   const [unitId, setUnitId] = useState(initialUnitId ?? '');
   const [starting, setStarting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -19,7 +20,7 @@ export function ReportPage({ units, initialUnitId }: ReportPageProps) {
     setError(null);
     try {
       const conversation = await createConversation('issue', unitId);
-      navigate({ name: 'thread', conversationId: conversation.id });
+      navigate(`/c/${conversation.id}`);
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : String(err));
       setStarting(false);

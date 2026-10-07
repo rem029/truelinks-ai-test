@@ -1,20 +1,17 @@
 import { useState } from 'react';
 import type { ConversationSummary, Unit } from '@truelinks/shared';
-import { startLeaseReview } from '../utils/startLeaseReview.ts';
-import { navigate, toHash, type UnitTab } from '../utils/router.ts';
+import { Navigate, NavLink, useNavigate, useParams, useSearchParams } from 'react-router';
+import { useStartLeaseReview } from '../hooks/useStartLeaseReview.ts';
 import { IssueReportList } from '../components/units/IssueReportList.tsx';
 import { LeaseReviewList } from '../components/units/LeaseReviewList.tsx';
 import { UnitLeasePanel } from '../components/units/UnitLeasePanel.tsx';
 import { StatusFilterBar } from '../components/units/StatusFilterBar.tsx';
 import { ISSUE_FILTERS, LEASE_FILTERS, isUrgent, knownStatus, matchesStatus } from '../utils/unitFilters.ts';
 
+type UnitTab = 'issues' | 'leases';
+
 export interface UnitPageProps {
-  unitId: string;
-  tab: UnitTab;
-  // From the URL; see utils/unitFilters.ts
-  status: string | undefined;
-  urgent: boolean;
-  unit: Unit | undefined;
+  units: Unit[];
   reviews: ConversationSummary[];
   // Reloads the workspace after a row is archived, unarchived or deleted
   onChanged: () => void;
@@ -25,8 +22,16 @@ const TABS: { id: UnitTab; label: string }[] = [
   { id: 'leases', label: 'Lease records' },
 ];
 
-export function UnitPage({ unitId, tab, status: statusParam, urgent: urgentParam, unit, reviews, onChanged }: UnitPageProps) {
+// The URL is /u/<unitId>/<tab>, with the list's filter in ?status= and ?urgent=1 (see utils/unitFilters.ts)
+export function UnitPage({ units, reviews, onChanged }: UnitPageProps) {
+  const { unitId = '', tab: tabParam } = useParams();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const navigate = useNavigate();
+  const startLeaseReview = useStartLeaseReview();
   const [startError, setStartError] = useState<string | null>(null);
+  if (tabParam !== 'issues' && tabParam !== 'leases') return <Navigate to={`/u/${unitId}/issues`} replace />;
+  const tab: UnitTab = tabParam;
+  const unit = units.find((u) => u.unitId === unitId);
   const unitReviews = reviews.filter((r) => r.unitId === unitId);
   const current = unitReviews.filter((r) => !r.archivedAt);
   const counts: Record<UnitTab, number> = {
@@ -40,13 +45,18 @@ export function UnitPage({ unitId, tab, status: statusParam, urgent: urgentParam
 
   // Filtering runs on the summaries already loaded; server-side paging can replace it when lists grow
   const filters = tab === 'leases' ? LEASE_FILTERS : ISSUE_FILTERS;
-  const status = knownStatus(statusParam, filters);
-  const urgent = tab === 'issues' && urgentParam;
+  const status = knownStatus(searchParams.get('status') ?? undefined, filters);
+  const urgent = tab === 'issues' && searchParams.get('urgent') === '1';
   const tabItems = unitReviews.filter((r) => r.kind === (tab === 'leases' ? 'lease' : 'issue'));
   const shown = tabItems.filter((r) => matchesStatus(r, status, filters) && (!urgent || isUrgent(r)));
   const filtered = status !== undefined || urgent;
   const noun = tab === 'leases' ? 'lease records' : 'issues';
-  const showAll = () => navigate({ name: 'unit', unitId, tab });
+  function setFilter(nextStatus: string | undefined, nextUrgent: boolean) {
+    const params = new URLSearchParams();
+    if (nextStatus) params.set('status', nextStatus);
+    if (nextUrgent) params.set('urgent', '1');
+    setSearchParams(params);
+  }
 
   return (
     <div className="page">
@@ -66,14 +76,9 @@ export function UnitPage({ unitId, tab, status: statusParam, urgent: urgentParam
 
       <nav className="tabs" aria-label={`${unitId} records`}>
         {TABS.map((t) => (
-          <a
-            key={t.id}
-            aria-current={tab === t.id ? 'page' : undefined}
-            className={`tab ${tab === t.id ? 'is-active' : ''}`}
-            href={toHash({ name: 'unit', unitId, tab: t.id })}
-          >
+          <NavLink key={t.id} to={`/u/${unitId}/${t.id}`} className={({ isActive }) => `tab ${isActive ? 'is-active' : ''}`}>
             {t.label} <span className="tab-count">{counts[t.id]}</span>
-          </a>
+          </NavLink>
         ))}
       </nav>
 
@@ -86,9 +91,7 @@ export function UnitPage({ unitId, tab, status: statusParam, urgent: urgentParam
               status={status}
               urgent={tab === 'issues' ? urgent : null}
               label={`Filter ${noun} by status`}
-              onChange={(nextStatus, nextUrgent) =>
-                navigate({ name: 'unit', unitId, tab, status: nextStatus, urgent: nextUrgent })
-              }
+              onChange={setFilter}
             />
             <p className="filter-summary" aria-live="polite">
               {filtered ? `Showing ${shown.length} of ${tabItems.length} ${noun}` : ''}
@@ -104,7 +107,7 @@ export function UnitPage({ unitId, tab, status: statusParam, urgent: urgentParam
         {shown.length === 0 && filtered && (
           <div className="empty-state">
             <p>No {noun} match this filter.</p>
-            <button type="button" className="btn btn-secondary" onClick={showAll}>
+            <button type="button" className="btn btn-secondary" onClick={() => setFilter(undefined, false)}>
               Show all
             </button>
           </div>
@@ -112,7 +115,7 @@ export function UnitPage({ unitId, tab, status: statusParam, urgent: urgentParam
         {shown.length === 0 && !filtered && tab === 'issues' && (
           <div className="empty-state">
             <p>No issues reported for this unit.</p>
-            <button type="button" className="btn btn-secondary" onClick={() => navigate({ name: 'report', unitId })}>
+            <button type="button" className="btn btn-secondary" onClick={() => navigate(`/report/${unitId}`)}>
               Report an issue
             </button>
           </div>

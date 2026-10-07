@@ -10,7 +10,7 @@ import {
   postMessage,
   ApiError,
 } from '../utils/api.ts';
-import { navigate, threadParent, toHash } from '../utils/router.ts';
+import { Link, useNavigate } from 'react-router';
 import { MessageItem } from '../components/thread/MessageItem.tsx';
 import { UploadDropZone } from '../components/thread/UploadDropZone.tsx';
 import { ConfirmBar } from '../components/thread/ConfirmBar.tsx';
@@ -30,6 +30,7 @@ interface ActionErrorInfo {
 }
 
 export function LeaseThreadPage({ conversationId, initialData }: LeaseThreadPageProps) {
+  const navigate = useNavigate();
   const [data, setData] = useState<ConversationDetails | null>(initialData ?? null);
   const [loading, setLoading] = useState(!initialData);
   const [pageError, setPageError] = useState<string | null>(null);
@@ -221,7 +222,7 @@ export function LeaseThreadPage({ conversationId, initialData }: LeaseThreadPage
           <button
             type="button"
             className="btn btn-secondary"
-            onClick={() => navigate({ name: 'home' })}
+            onClick={() => navigate('/')}
           >
             ← Back to Start
           </button>
@@ -235,7 +236,9 @@ export function LeaseThreadPage({ conversationId, initialData }: LeaseThreadPage
   const isArchived = conversation.archivedAt !== null;
   const isReadOnly = isConfirmed || isArchived;
   const isBusy = isSendingMessage || isExecutingAction || uploading;
-  const parentRoute = threadParent('lease', lease?.unitId ?? conversation.unitId);
+  // Back goes to the unit's Lease records tab, or the unassigned list while no unit is matched
+  const unitId = lease?.unitId ?? conversation.unitId;
+  const parentPath = unitId ? `/u/${unitId}/leases` : '/unassigned';
 
   return (
     <div className="app-container">
@@ -243,9 +246,9 @@ export function LeaseThreadPage({ conversationId, initialData }: LeaseThreadPage
         {/* Header */}
         <header className="thread-header">
           <div className="thread-header-left">
-            <a className="btn btn-subtle btn-sm" href={toHash(parentRoute)}>
+            <Link className="btn btn-subtle btn-sm" to={parentPath}>
               ← {lease?.unitId ?? conversation.unitId ?? 'Unassigned'}
-            </a>
+            </Link>
             <div className="thread-title">
               <h1 className="thread-heading" tabIndex={-1}>Lease review</h1>
               {isConfirmed ? (
@@ -272,7 +275,7 @@ export function LeaseThreadPage({ conversationId, initialData }: LeaseThreadPage
               itemName={documents[0]?.filename ?? 'Lease review'}
               disabled={isBusy}
               onChanged={refetch}
-              onDeleted={() => navigate(parentRoute)}
+              onDeleted={() => navigate(parentPath)}
             />
           </div>
         </header>

@@ -7,7 +7,7 @@ import {
   postWorkOrderAction,
   postIssueMessage,
 } from '../utils/api.ts';
-import { navigate, threadParent, toHash } from '../utils/router.ts';
+import { Link, useNavigate } from 'react-router';
 import { ArchiveActions } from '../components/ArchiveActions.tsx';
 import { CardRenderer } from '../components/cards/CardRenderer.tsx';
 import { IssueReportForm, type IssueReportFormData } from '../components/issue/IssueReportForm.tsx';
@@ -19,6 +19,7 @@ export interface IssueThreadPageProps {
 }
 
 export function IssueThreadPage({ conversationId, initialData }: IssueThreadPageProps) {
+  const navigate = useNavigate();
   const [data, setData] = useState<ConversationDetails | null>(initialData ?? null);
   const [loading, setLoading] = useState(!initialData);
   const [pageError, setPageError] = useState<string | null>(null);
@@ -118,7 +119,7 @@ export function IssueThreadPage({ conversationId, initialData }: IssueThreadPage
           <button
             type="button"
             className="btn btn-secondary"
-            onClick={() => navigate({ name: 'home' })}
+            onClick={() => navigate('/')}
           >
             ← Back to Start
           </button>
@@ -131,7 +132,8 @@ export function IssueThreadPage({ conversationId, initialData }: IssueThreadPage
   const hasIssue = Boolean(issue);
   const isArchived = conversation.archivedAt !== null;
   const isOpen = conversation.status === 'open' && !isArchived;
-  const parentRoute = threadParent('issue', conversation.unitId);
+  // Back goes to the unit's Issues tab, or home for a report without a unit
+  const parentPath = conversation.unitId ? `/u/${conversation.unitId}/issues` : '/';
   // Only the newest work order card takes actions; older ones show the draft as it was
   const latestWorkOrderMessageId = [...messages]
     .reverse()
@@ -145,9 +147,9 @@ export function IssueThreadPage({ conversationId, initialData }: IssueThreadPage
         {/* Header */}
         <header className="thread-header">
           <div className="thread-header-left">
-            <a className="btn btn-subtle btn-sm" href={toHash(parentRoute)}>
+            <Link className="btn btn-subtle btn-sm" to={parentPath}>
               ← {conversation.unitId ?? 'Home'}
-            </a>
+            </Link>
             <div className="thread-title">
               <h1 className="thread-heading" tabIndex={-1}>Issue report</h1>
               <span className="badge badge-subtle">{conversation.status}</span>
@@ -163,7 +165,7 @@ export function IssueThreadPage({ conversationId, initialData }: IssueThreadPage
                 archiveBlockedReason={data.archiveBlockedReason}
                 itemName={workOrder?.title ?? 'Issue report'}
                 onChanged={refetch}
-                onDeleted={() => navigate(parentRoute)}
+                onDeleted={() => navigate(parentPath)}
               />
             </div>
           )}

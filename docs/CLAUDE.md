@@ -39,7 +39,7 @@ Brief: `docs/attachments/Solution-brief-explained.docx` (summary in `docs/email.
 
 ## Dependencies
 Before adding a package, check it is **actively maintained** (release in the last ~6 months, issues answered), **widely used** (strong weekly downloads, many dependents) and **has types**. Prefer the standard library or a few lines of code over a package for small things. Record why each non-obvious dependency was chosen in README → Decisions.
-Approved so far: express, zod, multer, kysely, better-sqlite3, openai, unpdf, mammoth, react, react-dom, zustand, vite, @vitejs/plugin-react; testing: @playwright/test; dev tooling: typescript, tsx, concurrently, @types/*, pdfkit, docx and @napi-rs/canvas (sample lease generation only).
+Approved so far: express, zod, multer, kysely, better-sqlite3, openai, unpdf, mammoth, react, react-dom, react-router, zustand, vite, @vitejs/plugin-react; testing: @playwright/test; dev tooling: typescript, tsx, concurrently, @types/*, pdfkit, docx and @napi-rs/canvas (sample lease generation only).
 
 ## Testing
 - Playwright end-to-end tests in `e2e/` cover each user flow through the UI, on the stub provider with the sample files in `data/`.

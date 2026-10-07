@@ -1,5 +1,6 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
+import { HashRouter } from 'react-router';
 import { App } from './App.tsx';
 import { NoticeProvider } from './components/Notice.tsx';
 
@@ -10,8 +11,10 @@ if (!rootElement) {
 
 createRoot(rootElement).render(
   <StrictMode>
-    <NoticeProvider>
-      <App />
-    </NoticeProvider>
+    <HashRouter>
+      <NoticeProvider>
+        <App />
+      </NoticeProvider>
+    </HashRouter>
   </StrictMode>
 );

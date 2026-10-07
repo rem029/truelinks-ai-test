@@ -1,5 +1,5 @@
 import type { ConversationSummary } from '@truelinks/shared';
-import { toHash } from '../../utils/router.ts';
+import { Link } from 'react-router';
 import { formatShortDate } from '../../utils/formatters.ts';
 import { ArchiveActions } from '../ArchiveActions.tsx';
 
@@ -17,7 +17,7 @@ export function IssueReportList({ reports, onChanged }: IssueReportListProps) {
         const workOrder = report.workOrder;
         return (
           <li key={report.id} className="review-item">
-            <a className="review-row" href={toHash({ name: 'thread', conversationId: report.id })}>
+            <Link className="review-row" to={`/c/${report.id}`}>
               <span className="review-row-main">
                 <span className="review-row-title">{workOrder ? workOrder.title : 'No work order'}</span>
                 <span className="review-row-meta">
@@ -30,7 +30,7 @@ export function IssueReportList({ reports, onChanged }: IssueReportListProps) {
                 {workOrder && <span className="badge badge-subtle">{workOrder.severity}</span>}
                 {workOrder && <span className={`badge ${STATUS_BADGE[workOrder.status]}`}>{workOrder.status}</span>}
               </span>
-            </a>
+            </Link>
             <ArchiveActions
               conversationId={report.id}
               kind="issue"
