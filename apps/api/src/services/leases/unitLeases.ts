@@ -1,4 +1,4 @@
-import type { Lease, LeaseRecord } from '@truelinks/shared';
+import type { Lease, LeaseRecord, LeaseTiming } from '@truelinks/shared';
 import { monthlyRent } from './rent.ts';
 
 // Dates are ISO yyyy-mm-dd, so string comparison is date comparison
@@ -65,15 +65,25 @@ export function findDuplicate(record: LeaseRecord, confirmedLeases: Lease[]): Le
   );
 }
 
+// Where a confirmed lease sits on its unit's timeline today; null for a draft or a lease without dates
+export function leaseTiming(lease: Lease, confirmedLeases: Lease[], today: string): LeaseTiming | null {
+  if (lease.status !== 'confirmed') return null;
+  const { active, next } = placeUnitLeases(confirmedLeases, today);
+  if (lease.id === active?.id) return 'active';
+  if (lease.id === next?.id) return 'next';
+  const term = leaseTerm(lease.record);
+  if (!term) return null;
+  return term.end < today ? 'ended' : 'later';
+}
+
 // Why a lease can't be archived, or null when it can. A draft always can; a confirmed lease only
 // once it has ended, so the unit's current and next lease stay on record.
 export function archiveBlockedReason(lease: Lease, confirmedLeases: Lease[], today: string): string | null {
   if (lease.status !== 'confirmed') return null;
-  const { active, next } = placeUnitLeases(confirmedLeases, today);
-  if (lease.id === active?.id) return "This is the unit's current lease, so it can't be archived";
-  if (lease.id === next?.id) return "This is the unit's next lease, so it can't be archived";
-  const term = leaseTerm(lease.record);
-  if (!term || term.end >= today) return 'A confirmed lease can be archived only after it has ended';
+  const timing = leaseTiming(lease, confirmedLeases, today);
+  if (timing === 'active') return "This is the unit's current lease, so it can't be archived";
+  if (timing === 'next') return "This is the unit's next lease, so it can't be archived";
+  if (timing !== 'ended') return 'A confirmed lease can be archived only after it has ended';
   return null;
 }
 

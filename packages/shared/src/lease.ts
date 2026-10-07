@@ -43,6 +43,10 @@ export type LeaseRecord = z.infer<typeof LeaseRecord>;
 export const LeaseStatus = z.enum(['draft', 'confirmed']);
 export type LeaseStatus = z.infer<typeof LeaseStatus>;
 
+// Where a confirmed lease sits on its unit's timeline today; "later" starts after the next one
+export const LeaseTiming = z.enum(['active', 'next', 'later', 'ended']);
+export type LeaseTiming = z.infer<typeof LeaseTiming>;
+
 // The background full-document analysis (conflicts, judgement concerns) that runs after the fast extraction
 export const LeaseAnalysisStatus = z.enum(['pending', 'done', 'failed']);
 export type LeaseAnalysisStatus = z.infer<typeof LeaseAnalysisStatus>;

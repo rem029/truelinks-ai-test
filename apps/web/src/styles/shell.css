@@ -511,3 +511,72 @@
   box-shadow: 0 8px 24px -8px rgba(0, 0, 0, 0.3);
   overflow-wrap: anywhere;
 }
+
+/* Status filter chips above a unit's list; pressed = the accent outline, not a fill, so the list stays the focus */
+.filter-header {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+  margin-bottom: 0.75rem;
+}
+
+.filter-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.375rem;
+}
+
+.filter-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  min-height: 2rem;
+  padding: 0 0.75rem;
+  border: 1px solid var(--border-subtle);
+  border-radius: 999px;
+  background-color: var(--bg-surface);
+  color: var(--text-secondary);
+  font: inherit;
+  font-size: 0.8125rem;
+  cursor: pointer;
+}
+
+.filter-chip:hover {
+  border-color: var(--border-strong);
+  color: var(--text-primary);
+}
+
+.filter-chip[aria-pressed='true'] {
+  border-color: var(--accent);
+  background-color: var(--accent-subtle);
+  color: var(--accent-text);
+  font-weight: 500;
+}
+
+.filter-chip-count {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.filter-chip[aria-pressed='true'] .filter-chip-count {
+  color: inherit;
+}
+
+/* Urgent sits apart from the status chips: it narrows any of them */
+.filter-chip-urgent {
+  margin-left: 0.5rem;
+}
+
+.filter-summary {
+  margin: 0;
+  min-height: 1.25rem;
+  font-size: 0.8125rem;
+  color: var(--text-secondary);
+}
+
+@media (pointer: coarse) {
+  .filter-chip {
+    min-height: 2.75rem;
+  }
+}

@@ -1,7 +1,7 @@
 import type { ConversationKind, ConversationSummary, Lease } from '@truelinks/shared';
 import type { Repositories } from '../../db/repositories/index.ts';
 import { listPendingItems } from '../leases/review/pendingItems.ts';
-import { archiveBlockedReason, todayIso } from '../leases/unitLeases.ts';
+import { archiveBlockedReason, leaseTiming, todayIso } from '../leases/unitLeases.ts';
 
 export interface ListConversationsFilter {
   kind?: ConversationKind;
@@ -42,6 +42,7 @@ export async function listConversations(
         unitId: issue.unitId ?? conv.unitId,
         filename: null,
         leaseStatus: null,
+        leaseTiming: null,
         analysisStatus: null,
         openItems: null,
         photoCount: issue.photos.length,
@@ -61,6 +62,7 @@ export async function listConversations(
       continue;
     }
     const lease = await repositories.leases.getByConversation(conv.id);
+    const confirmedLeases = lease?.unitId ? await confirmedLeasesOf(lease.unitId) : [];
 
     summaries.push({
       id: conv.id,
@@ -69,14 +71,13 @@ export async function listConversations(
       unitId: lease?.unitId ?? conv.unitId,
       filename: docs[0]?.filename ?? null,
       leaseStatus: lease?.status ?? null,
+      leaseTiming: lease ? leaseTiming(lease, confirmedLeases, today) : null,
       analysisStatus: lease?.analysisStatus ?? null,
       openItems: lease ? listPendingItems(lease).length : null,
       photoCount: null,
       workOrder: null,
       archivedAt: conv.archivedAt,
-      archiveBlockedReason: lease
-        ? archiveBlockedReason(lease, lease.unitId ? await confirmedLeasesOf(lease.unitId) : [], today)
-        : null,
+      archiveBlockedReason: lease ? archiveBlockedReason(lease, confirmedLeases, today) : null,
       createdAt: conv.createdAt,
       updatedAt: conv.updatedAt,
     });

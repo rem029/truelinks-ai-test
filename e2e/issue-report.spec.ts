@@ -18,10 +18,10 @@ test('report an AC leak with photos, accept the drafted work order, find it unde
   const row = page.getByRole('link', { name: /AC leak/ });
   await expect(row).toContainText('accepted');
 
-  // Archiving asks first, then moves the report under "Show archived"
+  // Archiving asks first, then moves the report under the Archived filter
   await page.getByRole('button', { name: /^Archive .*AC leak/ }).click();
   await page.getByRole('dialog', { name: 'Archive this issue report?' }).getByRole('button', { name: 'Archive' }).click();
   await expect(row).toHaveCount(0);
-  await page.getByRole('button', { name: /^Show archived/ }).click();
+  await page.getByRole('button', { name: /^Archived/ }).click();
   await expect(page.getByRole('button', { name: /^Unarchive .*AC leak/ })).toBeVisible();
 });

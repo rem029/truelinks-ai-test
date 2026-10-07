@@ -81,7 +81,8 @@ export function App() {
     };
   }, []);
 
-  const routeKey = toHash(route);
+  // A filter change on the unit page only narrows what is already loaded, so it doesn't reload
+  const routeKey = toHash(route.name === 'unit' ? { name: 'unit', unitId: route.unitId, tab: route.tab } : route);
   const { units, reviews, error, reload } = useWorkspace(routeKey);
 
   const currentUnitId =
@@ -107,6 +108,8 @@ export function App() {
           <UnitPage
             unitId={route.unitId}
             tab={route.tab}
+            status={route.status}
+            urgent={route.urgent ?? false}
             unit={units.find((u) => u.unitId === route.unitId)}
             reviews={reviews}
             onChanged={reload}

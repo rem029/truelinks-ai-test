@@ -3,18 +3,26 @@ export type UnitTab = 'issues' | 'leases';
 export type Route =
   | { name: 'home' }
   | { name: 'thread'; conversationId: string }
-  | { name: 'unit'; unitId: string; tab: UnitTab }
+  // status and urgent filter the tab's list (see utils/unitFilters.ts); kept in the URL so Back and shared links keep them
+  | { name: 'unit'; unitId: string; tab: UnitTab; status?: string; urgent?: boolean }
   | { name: 'unassigned' }
   | { name: 'report'; unitId: string | null };
 
 export function parseHash(hash: string): Route {
-  const clean = hash.replace(/^#\/?/, '').trim();
-  const parts = clean.split('/').filter(Boolean).map(decodeURIComponent);
+  const [path = '', query = ''] = hash.replace(/^#\/?/, '').trim().split('?');
+  const params = new URLSearchParams(query);
+  const parts = path.split('/').filter(Boolean).map(decodeURIComponent);
   if (parts[0] === 'c' && parts[1]) {
     return { name: 'thread', conversationId: parts[1] };
   }
   if (parts[0] === 'u' && parts[1]) {
-    return { name: 'unit', unitId: parts[1], tab: parts[2] === 'leases' ? 'leases' : 'issues' };
+    return {
+      name: 'unit',
+      unitId: parts[1],
+      tab: parts[2] === 'leases' ? 'leases' : 'issues',
+      status: params.get('status') ?? undefined,
+      urgent: params.get('urgent') === '1',
+    };
   }
   if (parts[0] === 'unassigned') {
     return { name: 'unassigned' };
@@ -29,8 +37,13 @@ export function toHash(route: Route): string {
   switch (route.name) {
     case 'thread':
       return `#/c/${encodeURIComponent(route.conversationId)}`;
-    case 'unit':
-      return `#/u/${encodeURIComponent(route.unitId)}/${route.tab}`;
+    case 'unit': {
+      const params = new URLSearchParams();
+      if (route.status) params.set('status', route.status);
+      if (route.urgent) params.set('urgent', '1');
+      const query = params.toString();
+      return `#/u/${encodeURIComponent(route.unitId)}/${route.tab}${query ? `?${query}` : ''}`;
+    }
     case 'unassigned':
       return '#/unassigned';
     case 'report':

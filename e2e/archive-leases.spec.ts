@@ -24,8 +24,8 @@ test('a draft lease review is archived and deleted from its row, each after a co
   // The row's button is gone, so focus lands on the page heading rather than the top of the document
   await expect(page.getByRole('heading', { level: 1, name: 'MC-B-1204' })).toBeFocused();
 
-  // Still reachable under "Show archived", where it can be deleted
-  await page.getByRole('button', { name: /^Show archived/ }).click();
+  // Still reachable under the Archived filter, where it can be deleted
+  await page.getByRole('button', { name: /^Archived/ }).click();
   await rowOf(page, conversationId).getByRole('button', { name: /^Delete / }).click();
   const deleteDialog = page.getByRole('dialog', { name: 'Delete this lease review permanently?' });
   await deleteDialog.getByRole('button', { name: 'Delete permanently' }).click();

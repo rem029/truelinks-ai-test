@@ -5,11 +5,15 @@ import { navigate, toHash, type UnitTab } from '../utils/router.ts';
 import { IssueReportList } from '../components/units/IssueReportList.tsx';
 import { LeaseReviewList } from '../components/units/LeaseReviewList.tsx';
 import { UnitLeasePanel } from '../components/units/UnitLeasePanel.tsx';
-import { ArchivedSection } from '../components/units/ArchivedSection.tsx';
+import { StatusFilterBar } from '../components/units/StatusFilterBar.tsx';
+import { ISSUE_FILTERS, LEASE_FILTERS, isUrgent, knownStatus, matchesStatus } from '../utils/unitFilters.ts';
 
 export interface UnitPageProps {
   unitId: string;
   tab: UnitTab;
+  // From the URL; see utils/unitFilters.ts
+  status: string | undefined;
+  urgent: boolean;
   unit: Unit | undefined;
   reviews: ConversationSummary[];
   // Reloads the workspace after a row is archived, unarchived or deleted
@@ -21,20 +25,28 @@ const TABS: { id: UnitTab; label: string }[] = [
   { id: 'leases', label: 'Lease records' },
 ];
 
-export function UnitPage({ unitId, tab, unit, reviews, onChanged }: UnitPageProps) {
+export function UnitPage({ unitId, tab, status: statusParam, urgent: urgentParam, unit, reviews, onChanged }: UnitPageProps) {
   const [startError, setStartError] = useState<string | null>(null);
   const unitReviews = reviews.filter((r) => r.unitId === unitId);
-  const archived = unitReviews.filter((r) => r.archivedAt);
   const current = unitReviews.filter((r) => !r.archivedAt);
-  const issues = current.filter((r) => r.kind === 'issue');
-  const leases = current.filter((r) => r.kind === 'lease');
-  const archivedIssues = archived.filter((r) => r.kind === 'issue');
-  const archivedLeases = archived.filter((r) => r.kind === 'lease');
-  const counts: Record<UnitTab, number> = { issues: issues.length, leases: leases.length };
-  const confirmedKey = leases
+  const counts: Record<UnitTab, number> = {
+    issues: current.filter((r) => r.kind === 'issue').length,
+    leases: current.filter((r) => r.kind === 'lease').length,
+  };
+  const confirmedKey = current
     .filter((r) => r.leaseStatus === 'confirmed')
     .map((r) => r.id)
     .join(',');
+
+  // Filtering runs on the summaries already loaded; server-side paging can replace it when lists grow
+  const filters = tab === 'leases' ? LEASE_FILTERS : ISSUE_FILTERS;
+  const status = knownStatus(statusParam, filters);
+  const urgent = tab === 'issues' && urgentParam;
+  const tabItems = unitReviews.filter((r) => r.kind === (tab === 'leases' ? 'lease' : 'issue'));
+  const shown = tabItems.filter((r) => matchesStatus(r, status, filters) && (!urgent || isUrgent(r)));
+  const filtered = status !== undefined || urgent;
+  const noun = tab === 'leases' ? 'lease records' : 'issues';
+  const showAll = () => navigate({ name: 'unit', unitId, tab });
 
   return (
     <div className="page">
@@ -66,50 +78,65 @@ export function UnitPage({ unitId, tab, unit, reviews, onChanged }: UnitPageProp
       </nav>
 
       <section className="tab-panel" aria-label={TABS.find((t) => t.id === tab)?.label}>
-        {tab === 'issues' &&
-          (issues.length > 0 ? (
-            <IssueReportList reports={issues} onChanged={onChanged} />
-          ) : (
-            <div className="empty-state">
-              <p>No issues reported for this unit.</p>
-              <button type="button" className="btn btn-secondary" onClick={() => navigate({ name: 'report', unitId })}>
-                Report an issue
-              </button>
-            </div>
-          ))}
-        {tab === 'leases' &&
-          (leases.length > 0 ? (
-            <LeaseReviewList reviews={leases} onChanged={onChanged} />
-          ) : (
-            <div className="empty-state">
-              <p>No lease records for this unit. A lease joins its unit when the review matches it.</p>
-              <button
-                type="button"
-                className="btn btn-secondary"
-                onClick={() =>
-                  startLeaseReview().catch((err: unknown) =>
-                    setStartError(err instanceof Error ? err.message : String(err))
-                  )
-                }
-              >
-                New lease review
-              </button>
-              {startError && (
-                <p className="form-error-alert" role="alert">
-                  {startError}
-                </p>
-              )}
-            </div>
-          ))}
-        {tab === 'issues' && (
-          <ArchivedSection count={archivedIssues.length}>
-            <IssueReportList reports={archivedIssues} onChanged={onChanged} />
-          </ArchivedSection>
+        {tabItems.length > 0 && (
+          <div className="filter-header">
+            <StatusFilterBar
+              items={tabItems}
+              filters={filters}
+              status={status}
+              urgent={tab === 'issues' ? urgent : null}
+              label={`Filter ${noun} by status`}
+              onChange={(nextStatus, nextUrgent) =>
+                navigate({ name: 'unit', unitId, tab, status: nextStatus, urgent: nextUrgent })
+              }
+            />
+            <p className="filter-summary" aria-live="polite">
+              {filtered ? `Showing ${shown.length} of ${tabItems.length} ${noun}` : ''}
+            </p>
+          </div>
         )}
-        {tab === 'leases' && (
-          <ArchivedSection count={archivedLeases.length}>
-            <LeaseReviewList reviews={archivedLeases} onChanged={onChanged} />
-          </ArchivedSection>
+        {shown.length > 0 &&
+          (tab === 'issues' ? (
+            <IssueReportList reports={shown} onChanged={onChanged} />
+          ) : (
+            <LeaseReviewList reviews={shown} onChanged={onChanged} />
+          ))}
+        {shown.length === 0 && filtered && (
+          <div className="empty-state">
+            <p>No {noun} match this filter.</p>
+            <button type="button" className="btn btn-secondary" onClick={showAll}>
+              Show all
+            </button>
+          </div>
+        )}
+        {shown.length === 0 && !filtered && tab === 'issues' && (
+          <div className="empty-state">
+            <p>No issues reported for this unit.</p>
+            <button type="button" className="btn btn-secondary" onClick={() => navigate({ name: 'report', unitId })}>
+              Report an issue
+            </button>
+          </div>
+        )}
+        {shown.length === 0 && !filtered && tab === 'leases' && (
+          <div className="empty-state">
+            <p>No lease records for this unit. A lease joins its unit when the review matches it.</p>
+            <button
+              type="button"
+              className="btn btn-secondary"
+              onClick={() =>
+                startLeaseReview().catch((err: unknown) =>
+                  setStartError(err instanceof Error ? err.message : String(err))
+                )
+              }
+            >
+              New lease review
+            </button>
+            {startError && (
+              <p className="form-error-alert" role="alert">
+                {startError}
+              </p>
+            )}
+          </div>
         )}
       </section>
     </div>

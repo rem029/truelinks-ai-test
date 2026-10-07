@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { Card } from './cards.ts';
 import { RuleResult } from './rules.ts';
-import { Lease, LeaseStatus, LeaseAnalysisStatus } from './lease.ts';
+import { Lease, LeaseStatus, LeaseAnalysisStatus, LeaseTiming } from './lease.ts';
 import { LeaseDocument } from './leaseDocument.ts';
 import { Issue, WorkOrder } from './issue.ts';
 
@@ -121,6 +121,7 @@ export const ConversationSummary = z.object({
   unitId: z.string().nullable(),
   filename: z.string().nullable(),
   leaseStatus: LeaseStatus.nullable(),
+  leaseTiming: LeaseTiming.nullable(),
   analysisStatus: LeaseAnalysisStatus.nullable(),
   openItems: z.number().int().nonnegative().nullable(),
   photoCount: z.number().int().nonnegative().nullable(),
