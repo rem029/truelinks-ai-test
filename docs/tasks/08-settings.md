@@ -6,7 +6,7 @@ Goal: owner manages units and rules in the UI; seeded from `data/` on first run.
 ### Tasks
 - [x] Settings in the sidebar footer opens a modal (native `<dialog>`) with Rules and Units tabs
 - [x] Units: list, add (joins an existing building, starts available)
-- [ ] Units: edit, change status (later)
+- [ ] Units: edit, change status (moved to phase 3)
 - [x] Rules: list the current ruleset; add a field-comparison rule (code checks) or a plain-language rule (the model judges with a verified quote); adding saves a new ruleset version
 - [x] Rules: edit (comparison and plain-language rules fully; built-in R1–R7 severity only), delete with confirmation, version history (read-only past versions) and restore; every change saves a new version with a change note
 - [x] Lease results show which ruleset version they used (already stored per lease and per result)
@@ -21,12 +21,22 @@ Goal: owner manages units and rules in the UI; seeded from `data/` on first run.
 - **Layout pass (`/impeccable layout`, owner: "too dense"):** list first, forms replace the list with a back link; rules as a readable list with a quiet "checked by" line; rule kind as two option cards; units table down to 4 columns; spacing on a 4-based scale; SVG icons instead of glyphs; fixed dialog height; full-screen on phones.
 - Not done: edit/retire units; switching a rule off without deleting it; re-checking open drafts on demand.
 
-## Phase 2 — Models (owner request)
+## Phase 2a — Models, API (owner request; ~13 files)
+Settings table (migration), OpenRouter model list endpoint, provider reads the chosen model per call. The UI is phase 2b (~7 files: Settings tab, api.ts, styles, e2e, README). The tasks below cover both.
 Until this phase the models are set in `.env` (`OPENROUTER_MODEL` for judgement, `OPENROUTER_FAST_MODEL` for simple jobs); `.env` stays the default when nothing is saved.
 ### Tasks
 - [ ] Settings screen: pick the default and the fast model from OpenRouter's model list (`GET https://openrouter.ai/api/v1/models`), filtered to models that support JSON output (and images and tools for the default model)
 - [ ] Show each model's price per million input/output tokens, plus an estimated cost per lease (from the logged token counts of recent extractions)
 - [ ] Save the choice in the DB; the provider reads it per call, so a change applies without a restart. Log which model each call used (already in the model log line).
 - [ ] Optional: "test on sample lease" button that runs one extraction and shows time, cost and whether the values matched the fixture (the comparison done by hand in task 04 phase 2)
+### Results
+-
+
+## Phase 3 — Units: edit and change status (~10 files)
+### Tasks
+- [ ] API: edit a unit (label, type, area) and change its status; occupancy stays tied to the current lease, so a unit with a lease in effect can't be set available
+- [ ] Settings → Units: edit form and status control
+- [ ] e2e: edit a unit; refused status change on an occupied unit
+- [ ] README
 ### Results
 -

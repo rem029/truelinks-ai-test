@@ -10,7 +10,7 @@ Goal: one set of Zod schemas shared by API, agent output, and UI; persisted.
 - [x] `Issue` (photos, condition, equipment[]), `WorkOrder` (title, description, unitId, severity, status)
 - [x] `Conversation` (kind: lease | issue, unitId?, status: open | confirmed | abandoned), `Message` (role, text, cards[], attachments[])
 - [x] `Card` union: `field`, `rule`, `flag`, `unitMatch`, `workOrder`, `summary` — each with its allowed actions
-- [ ] (Stretch) `User` (id, name, role: owner | inspector), `ReportLink` (unitId, token, revokedAt?), `Notification` (userId, issueId, summary, readAt?)
+- [x] (Stretch, moved to 09) `User` (id, name, role: owner | inspector), `ReportLink` (unitId, token, revokedAt?), `Notification` (userId, issueId, summary, readAt?)
 - [x] `Action` union: accept / reject / edit(value) / choose(option) / confirm
 ### Results
 - Schemas in `packages/shared/src/`, one file each (`sourcedField`, `severity`, `unit`, `rules`, `flag`, `lease`, `issue`, `conversation`, `cards`, `actions`), exported from `index.ts`. Types are always `z.infer` (no hand-written duplicates).

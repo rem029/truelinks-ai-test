@@ -5,6 +5,15 @@ Received 2026-10-04 (planning day) · build 2026-10-05 → 2026-10-07 · polish 
 **Rule: build the brief's minimum requirements first. Nothing from Stretch starts until every Must item works end-to-end with the stub provider.**
 Long-term vision: a property management system (tickets, roles, notifications). That's the README roadmap, not this build.
 
+## Remaining work (replanned 2026-10-07)
+Every phase changes at most 15 files and starts with a reviewed skeleton (CLAUDE.md → Workflow). Order:
+1. ~~11 phase 4~~ — daily occupancy job: deferred to README Roadmap item 10
+2. **06 phase 2b** — open-issue count per unit in the sidebar (~4)
+3. **10 phase 1** — migration backup and restore (~9)
+4. **07 phase 1** — final README (2)
+5. **07 phase 2** — submission (2; owner pushes and emails)
+6. Stretch, if time: 08 phase 3, 08 phases 2a–2b, 09 phases 1a–3b, 11 phases 5a–5b
+
 ## Must — brief requirements (deliver in 4 days)
 **Part A — Lease record** (owner)
 - Upload lease (PDF; DOCX if quick) → clauses → AI extracts parties, unit, dates, rent (amount + frequency), deposit, escalation, renewal, termination — each with clause + quote

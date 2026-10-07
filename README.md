@@ -105,7 +105,7 @@ Folders are created when their first file is needed. Routes stay thin: no busine
 
 **Built:** everything the brief asks for — lease extraction with sources, flags, rule validation, unit matching and occupancy update, photo assessment and draft work orders, accept/reject/edit on every field, flag and work order, and the unit page. Runs with a stub model (no key) or a real one through OpenRouter.
 
-**Left out on purpose** (to deliver the brief in four days): login and roles, tenant QR reporting, ticket statuses and follow-ups, notifications, editing or removing units, scanned PDFs and multi-image leases, streaming responses. All are designed below in the [Roadmap](#roadmap-toward-a-property-management-system).
+**Left out on purpose** (to deliver the brief in four days): login and roles, tenant QR reporting, ticket statuses and follow-ups, notifications, editing or removing units, occupancy that follows lease dates, scanned PDFs and multi-image leases, streaming responses. All are designed below in the [Roadmap](#roadmap-toward-a-property-management-system).
 
 ## Decisions
 
@@ -137,7 +137,7 @@ Folders are created when their first file is needed. Routes stay thin: no busine
   - **Typed messages go to the agent** (`leaseCorrection.md`, default model, at most 6 steps) with five tools: `search_clauses`, `update_field`, `find_unit`, `evaluate_rules` and `ask_user`. It gets the current fields and their review state, the open items and the last 10 messages. Each assistant message stores its tool calls, model, tokens and time (`agentRun`), so the UI can show the steps.
   - **Locked means locked.** A field the owner accepted or edited can't be changed by the agent. `update_field` refuses it and the agent tells the owner to use Edit on the card. Only the owner's own card action changes it.
   - **When unsure, the agent asks.** With the real model, "the rent looks wrong" made it read the rent clauses and ask "8,500 or 8,000?" instead of picking one. A unit it can't find after two searches is also a question, not a guess. Tool arguments are plain strings, because mimo garbles union types; code converts each value to its field's type.
-  - **Confirm is a button, never a tool.** Confirming is refused (409, with the list) while anything is open: the background analysis is still running, the unit isn't confirmed, a flag is open, or a field hasn't been reviewed. A high-severity rule failure needs an override reason, which is stored on the lease. A lease whose dates overlap a confirmed lease on the same unit is refused outright, override or not (409): only one lease can be in effect. Confirming marks the lease confirmed and the conversation closed, and the unit occupied if the lease is in effect today, in one database transaction, so a failure can't leave the unit occupied without a confirmed lease. A lease that starts later leaves the unit as it is (nothing yet flips a unit to occupied on the day its next lease starts; a daily job would). After that, every action gets 409.
+  - **Confirm is a button, never a tool.** Confirming is refused (409, with the list) while anything is open: the background analysis is still running, the unit isn't confirmed, a flag is open, or a field hasn't been reviewed. A high-severity rule failure needs an override reason, which is stored on the lease. A lease whose dates overlap a confirmed lease on the same unit is refused outright, override or not (409): only one lease can be in effect. Confirming marks the lease confirmed and the conversation closed, and the unit occupied if the lease is in effect today, in one database transaction, so a failure can't leave the unit occupied without a confirmed lease. A lease that starts later leaves the unit as it is (nothing yet flips a unit to occupied on the day its next lease starts, or back to available when its last lease ends; see Roadmap item 10). After that, every action gets 409.
 - **Amounts are only accepted in QAR.** If the lease states amounts with no currency, or in another currency, a high-severity flag asks the owner to confirm. Nothing is ever converted.
 - **No fixed lease template.** The agent reads whatever lease is uploaded. Leases come from many sources (old leases, broker drafts, other templates), so the AI does the reading and a person corrects it. Every extracted field can be accepted, rejected or edited, and the rules run again on the corrected values.
 - **SQLite now, with the database kept swappable.** SQLite needs no server: `npm install` and it runs, which matters for reviewers starting the project. To keep the database replaceable:
@@ -262,11 +262,12 @@ Everything below was designed during planning but is **not built**. The brief's 
 - Response-time targets by severity.
 - Assigning tickets to contractors.
 - Recurring-issue analytics: "this unit's AC has leaked three times; replace it, don't repair it."
+**10. Occupancy follows the lease dates.** Today a unit becomes occupied only when an in-effect lease is confirmed; a next lease that starts later, or a lease that ends, doesn’t change it. The fix is a pure `unitOccupancy(confirmedLeases, today)` (occupied if a lease is in effect, otherwise available; a unit with no confirmed lease keeps the owner’s status) applied by a `syncOccupancy` job that logs each unit it changes. It runs once on API start and daily as `npm run occupancy:sync` from an external scheduler (cron, a Kubernetes CronJob or a cloud scheduler), not a `setInterval` in the API: the schedule stays visible to operators and runs once however many API instances there are. At scale it would read only the leases starting or ending that day.
 
 ### Later: change how leases are made
 
-**10. Fast path for the owner's own template.** Read leases on the owner's standard template with plain code, and send everything else to the AI agent.
+**11. Fast path for the owner's own template.** Read leases on the owner's standard template with plain code, and send everything else to the AI agent.
 
-**11. Create leases inside the product.** Build the lease from a structured record and produce the PDF from it. There's nothing to extract, and the rules are checked before signing, not after.
+**12. Create leases inside the product.** Build the lease from a structured record and produce the PDF from it. There's nothing to extract, and the rules are checked before signing, not after.
 
-**12. Rules in plain language.** The owner writes a rule ("3BR units must include parking"). The AI proposes a structured rule, the owner approves it, and it becomes a new ruleset version.
+**13. Rules in plain language.** The owner writes a rule ("3BR units must include parking"). The AI proposes a structured rule, the owner approves it, and it becomes a new ruleset version.

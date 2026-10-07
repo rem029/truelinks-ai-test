@@ -72,3 +72,18 @@ Owner request: filter lease records and issues by status so a conversation is fo
 - **Archived:** the Archived chip replaces the "Show archived" toggle on both unit tabs (Issues too, so archived reports stay reachable). The Unassigned page keeps `ArchivedSection`.
 - **Tests:** `e2e/unit-filters.spec.ts` (2 tests); the archive specs now open the Archived chip. 11/11 pass, typecheck clean. Checked the chips at desktop and phone widths on the dev server.
 - **Follow-up:** server-side filtering and paging when lists get long (README → scale, item 4).
+
+## Phase 4 — Occupancy follows the lease dates (~5 files) — deferred to README Roadmap item 10
+Today a unit becomes occupied only when a lease is confirmed. A next lease that starts later, or a lease that ends, doesn't change it.
+### Tasks
+- [ ] Pure function: a unit's occupancy today from its confirmed leases (occupied if one is in effect, otherwise available)
+- [ ] Apply it on API start and once a day (a timer in the API process; a scheduler at scale), logging each unit it changes
+- [ ] e2e or by hand: a unit whose only lease has ended shows available after the check runs
+- [ ] README (behaviour + scale note)
+### Results
+- Not built (no time). Designed in README → Roadmap item 10: a sync job run on start and by an external scheduler (`npm run occupancy:sync`), chosen over a `setInterval` in the API process.
+
+## Phase 5 — Revised lease in the same review (stretch)
+Design is in 07 (owner's notes). Split: **5a** document versions and clause comparison (~9 files); **5b** reopen fields on changed clauses ("changed in revision"), re-run rules, e2e with a revised sample lease (~10). The amendment of a confirmed lease stays on the roadmap.
+### Results
+-
